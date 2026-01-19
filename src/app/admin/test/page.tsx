@@ -1,21 +1,33 @@
+import { createManualClient } from '@/lib/supabase/server';
 import Link from 'next/link';
 
-export default function Home() {
+export const dynamic = 'force-dynamic';
+
+export default async function TestPage() {
+  const supabase = createManualClient(true);
+  const { data: staff, error } = await supabase.from('staff').select('*');
+  
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-gray-50 p-6">
-      <div className="max-w-md w-full bg-white shadow-lg rounded-lg p-8 text-center">
-        <h1 className="text-2xl font-bold text-gray-800 mb-6">Project SEED v3.1</h1>
-        <p className="text-gray-600 mb-8">システム骨格の確立に成功しました。</p>
-        
+    <div className="p-8 bg-gray-50 min-h-screen">
+      <h1 className="text-2xl font-bold mb-4 text-gray-800">DB接続テストステータス</h1>
+      
+      {error ? (
+        <div className="p-4 bg-red-100 text-red-700 rounded-lg">
+          エラー発生: {error.message}
+        </div>
+      ) : (
         <div className="space-y-4">
-          <Link 
-            href="/admin/test" 
-            className="block w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition"
-          >
-            DB接続ステータスを確認
+          <div className="p-4 bg-green-100 text-green-700 rounded-lg font-bold">
+            接続成功：{staff?.length || 0} 件のデータを取得しました
+          </div>
+          <pre className="bg-white border border-gray-200 p-4 rounded-lg overflow-auto text-xs shadow-sm">
+            {JSON.stringify(staff, null, 2)}
+          </pre>
+          <Link href="/" className="text-blue-600 hover:underline text-sm inline-block mt-4">
+            ← トップページへ戻る
           </Link>
         </div>
-      </div>
-    </main>
+      )}
+    </div>
   );
 }
