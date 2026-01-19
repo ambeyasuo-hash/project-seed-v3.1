@@ -1,30 +1,21 @@
-import { createManualClient } from '@/lib/supabase/server';
+import Link from 'next/link';
 
-// キャッシュを無効化する設定を追加
-export const dynamic = 'force-dynamic';
-
-export default async function TestPage() {
-  // 第二引数を true にして、管理者権限（SERVICE_ROLE_KEY）で試行
-  const supabase = createManualClient(true);
-  const { data: staff, error } = await supabase.from('staff').select('*');
-  
-  const connectedUrl = process.env.MANUAL_DB_URL;
-
+export default function Home() {
   return (
-    <div className="p-8">
-      <h1 className="text-2xl font-bold mb-4">DB接続テスト (強制リロード版)</h1>
-      <p className="mb-2 text-sm text-gray-500">接続先URL: {connectedUrl}</p>
-      
-      {error ? (
-        <p className="text-red-500">エラー発生: {error.message}</p>
-      ) : (
-        <div>
-          <p className="mb-2 text-green-600 font-bold">取得件数: {staff?.length || 0} 件</p>
-          <pre className="bg-gray-100 p-4 rounded text-xs">
-            {JSON.stringify(staff, null, 2)}
-          </pre>
+    <main className="flex min-h-screen flex-col items-center justify-center bg-gray-50 p-6">
+      <div className="max-w-md w-full bg-white shadow-lg rounded-lg p-8 text-center">
+        <h1 className="text-2xl font-bold text-gray-800 mb-6">Project SEED v3.1</h1>
+        <p className="text-gray-600 mb-8">システム骨格の確立に成功しました。</p>
+        
+        <div className="space-y-4">
+          <Link 
+            href="/admin/test" 
+            className="block w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition"
+          >
+            DB接続ステータスを確認
+          </Link>
         </div>
-      )}
-    </div>
+      </div>
+    </main>
   );
 }
