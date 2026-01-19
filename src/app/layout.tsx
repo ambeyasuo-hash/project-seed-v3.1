@@ -1,8 +1,11 @@
-import "./globals.css";
+// src/app/layout.tsx
+import './globals.css';
+// ★追加: LiffProviderをインポート
+import { LiffProvider } from '@/components/providers/LiffProvider';
 
 export const metadata = {
-  title: "Project SEED v3.1",
-  description: "Restaurant Management System",
+  title: 'Project SEED v3.1',
+  description: 'Project SEED - Hyper Agent System',
 };
 
 export default function RootLayout({
@@ -12,7 +15,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ja">
-      <body>{children}</body>
+      <body>
+        {/* ★修正: LiffProviderでchildrenを囲む */}
+        <LiffProvider>
+          {children}
+        </LiffProvider>
+      </body>
     </html>
   );
 }
