@@ -1,7 +1,15 @@
 import { createClient } from '@supabase/supabase-js';
 
+// メインDB（SEED/ログ用）接続
+export const createMainClient = () => {
+  return createClient(
+    process.env.DB_TARGET_URL!,
+    process.env.DB_TARGET_KEY!
+  );
+};
+
+// マニュアル・シフトDB接続（管理者/AIロール）
 export const createManualClient = (useAiRole = false) => {
-  // あなたの .env.local にある正確な変数名を使用します
   const url = process.env.MANUAL_DB_URL!;
   const key = useAiRole 
     ? process.env.SERVICE_ROLE_KEY! 
