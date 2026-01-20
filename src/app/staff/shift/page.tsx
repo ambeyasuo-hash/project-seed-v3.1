@@ -206,14 +206,14 @@ export default function StaffShiftPage() {
             />
           </div>
           <div className="flex items-center pt-5">
-            <input
+          <input
               id="is_absent"
               name="is_absent"
               type="checkbox"
-              checked={formData.is_absent}
+              // null/undefined の場合に false を使用
+              checked={formData.is_absent ?? false} 
               onChange={handleChange}
               className="h-4 w-4 text-indigo-600 border-gray-300 rounded"
-            />
             <label htmlFor="is_absent" className="ml-2 block text-sm text-gray-900">この日は休みたい</label>
           </div>
         </div>
