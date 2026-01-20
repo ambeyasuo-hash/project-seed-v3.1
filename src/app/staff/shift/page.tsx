@@ -170,8 +170,7 @@ export default function StaffShiftPage() {
               name="start_time"
               required
               step="3600"
-              // null/undefined チェックを追加
-              value={formData.start_time ? formData.start_time.substring(0, 5) : ''} 
+              value={formData.start_time ? formData.start_time.substring(0, 5) : ''}
               onChange={handleChange}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border"
             />
@@ -184,7 +183,6 @@ export default function StaffShiftPage() {
               name="end_time"
               required
               step="3600"
-              // null/undefined チェックを追加
               value={formData.end_time ? formData.end_time.substring(0, 5) : ''}
               onChange={handleChange}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border"
@@ -196,14 +194,12 @@ export default function StaffShiftPage() {
           <div className="flex-1">
             <label htmlFor="priority_weight" className="block text-sm font-medium text-gray-700">希望の重み (1-100)</label>
             <input
-              <input
               type="number"
               id="priority_weight"
               name="priority_weight"
               min="1"
               max="100"
               required
-              // null/undefined チェックと string への変換を追加
               value={formData.priority_weight !== null && formData.priority_weight !== undefined ? formData.priority_weight.toString() : ''}
               onChange={handleChange}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border"
@@ -222,21 +218,7 @@ export default function StaffShiftPage() {
           </div>
         </div>
 
-        {/* notes はDBに存在しないため削除 */}
-        {/*
-        <div>
-          <label htmlFor="notes" className="block text-sm font-medium text-gray-700">備考</label>
-          <textarea
-            id="notes"
-            name="notes"
-            rows={3}
-            value={formData.notes || ''}
-            onChange={handleChange}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border"
-            placeholder="特別な希望があれば記入してください"
-          />
-        </div>
-        */}
+        {/* notes の input/textarea はDBスキーマに存在しないため削除済み */}
 
         <button
           type="submit"
