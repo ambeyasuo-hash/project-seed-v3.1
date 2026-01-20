@@ -196,13 +196,15 @@ export default function StaffShiftPage() {
           <div className="flex-1">
             <label htmlFor="priority_weight" className="block text-sm font-medium text-gray-700">希望の重み (1-100)</label>
             <input
+              <input
               type="number"
               id="priority_weight"
               name="priority_weight"
               min="1"
               max="100"
               required
-              value={formData.priority_weight}
+              // null/undefined チェックと string への変換を追加
+              value={formData.priority_weight !== null && formData.priority_weight !== undefined ? formData.priority_weight.toString() : ''}
               onChange={handleChange}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border"
             />
