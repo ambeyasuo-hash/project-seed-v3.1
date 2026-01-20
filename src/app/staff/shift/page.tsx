@@ -40,7 +40,6 @@ export default function StaffShiftPage() {
     request_date: new Date().toISOString().split('T')[0], // DBスキーマに合わせて request_date に修正
     start_time: '10:00:00',
     end_time: '19:00:00',
-    // notes を削除
     priority_weight: 50, // DBスキーマに合わせて priority_weight を追加
     is_absent: false, // DBスキーマに合わせて is_absent を追加
   });
@@ -89,7 +88,6 @@ export default function StaffShiftPage() {
     };
 
     try {
-      // notes がDBにないため、payload からは除外されている
       const result = await submitShiftRequest(payload);
 
       // ★ 型ガード
@@ -123,11 +121,10 @@ export default function StaffShiftPage() {
     return (
         <div className="p-4 max-w-md mx-auto bg-white shadow-lg rounded-lg mt-10">
             <h1 className="text-2xl font-bold mb-4 text-gray-800">シフト申請</h1>
-            <div className="mb-4 p-3 bg-red-100 border-l-4 border-red-500 text-red-700">
+            <div className="p-4 bg-red-100 border-l-4 border-red-500 text-red-700">
                 <p className="font-bold">アクセス拒否</p>
                 <p>スタッフ情報が見つかりません。あなたのLINE ID ({lineProfile?.userId?.substring(0, 8)}...) は名簿に登録されていません。</p>
             </div>
-            <p className="text-sm text-gray-500">LIFF ログイン済み: {isLoggedIn.toString()}</p>
         </div>
     );
   }
@@ -140,7 +137,7 @@ export default function StaffShiftPage() {
       </h1>
 
       <div className="mb-4 p-3 bg-blue-50 border-l-4 border-blue-500 text-blue-800 text-sm">
-          <p>認証成功: **{staffData?.display_name}** さん</p>
+          <p>ようこそ、**{staffData?.display_name}** さん</p>
           <p className="text-xs text-blue-600">スタッフID: {staffData?.id.substring(0, 8)}...</p>
       </div>
 
@@ -173,7 +170,8 @@ export default function StaffShiftPage() {
               name="start_time"
               required
               step="3600"
-              value={formData.start_time.substring(0, 5)}
+              // null/undefined チェックを追加
+              value={formData.start_time ? formData.start_time.substring(0, 5) : ''} 
               onChange={handleChange}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border"
             />
@@ -186,7 +184,8 @@ export default function StaffShiftPage() {
               name="end_time"
               required
               step="3600"
-              value={formData.end_time.substring(0, 5)}
+              // null/undefined チェックを追加
+              value={formData.end_time ? formData.end_time.substring(0, 5) : ''}
               onChange={handleChange}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border"
             />
@@ -221,7 +220,21 @@ export default function StaffShiftPage() {
           </div>
         </div>
 
-        {/* notes の項目はDBスキーマに存在しないため削除 */}
+        {/* notes はDBに存在しないため削除 */}
+        {/*
+        <div>
+          <label htmlFor="notes" className="block text-sm font-medium text-gray-700">備考</label>
+          <textarea
+            id="notes"
+            name="notes"
+            rows={3}
+            value={formData.notes || ''}
+            onChange={handleChange}
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border"
+            placeholder="特別な希望があれば記入してください"
+          />
+        </div>
+        */}
 
         <button
           type="submit"
