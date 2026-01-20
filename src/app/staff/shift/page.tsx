@@ -5,7 +5,7 @@
 import { useLiff } from '@/components/providers/LiffProvider'
 import React, { useState, useEffect } from 'react'
 import { getStaffByLineId } from '@/app/staff/actions' // スタッフ情報取得
-import { submitShiftRequest } from './actions.ts'; // シフト申請アクション
+import { submitShiftRequest } from './actions'; // シフト申請アクション
 import type { Database } from '@/types/database'
 
 // staffテーブルの型を抽出
