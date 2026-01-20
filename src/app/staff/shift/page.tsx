@@ -5,13 +5,14 @@
 import { useLiff } from '@/components/providers/LiffProvider'
 import React, { useState, useEffect } from 'react'
 import { getStaffByLineId } from '@/app/staff/actions' // スタッフ情報取得
-import { submitShiftRequest } from './actions'; // シフト申請アクション
+import { submitShiftRequest } from './actions' // シフト申請アクション
 import type { Database } from '@/types/database'
 
 // staffテーブルの型を抽出
 type StaffRow = Database['public']['Tables']['staff']['Row']
 // フォームデータ管理用の型を Database 型から直接定義
-type ShiftRequestFormData = Omit<Database['public']['Tables']['shift_requests']['Insert'], 'id' | 'is_approved' | 'created_at'>;
+// notes がDBに存在しないため、Omit の対象に追加
+type ShiftRequestFormData = Omit<Database['public']['Tables']['shift_requests']['Insert'], 'id' | 'is_approved' | 'created_at' | 'notes'>;
 
 // LiffProvider.tsx で定義済みの型を再定義
 interface LineProfile {
@@ -39,7 +40,7 @@ export default function StaffShiftPage() {
     request_date: new Date().toISOString().split('T')[0], // DBスキーマに合わせて request_date に修正
     start_time: '10:00:00',
     end_time: '19:00:00',
-    notes: '',
+    // notes を削除
     priority_weight: 50, // DBスキーマに合わせて priority_weight を追加
     is_absent: false, // DBスキーマに合わせて is_absent を追加
   });
@@ -68,8 +69,7 @@ export default function StaffShiftPage() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value, type, checked } = e.target as HTMLInputElement;
-    // 型推論に任せる (正しい型定義が生成されていればエラーは出ない)
-    setFormData(prev => ({ 
+    setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : (name === 'priority_weight' ? parseInt(value, 10) : value),
     }));
@@ -89,6 +89,7 @@ export default function StaffShiftPage() {
     };
 
     try {
+      // notes がDBにないため、payload からは除外されている
       const result = await submitShiftRequest(payload);
 
       // ★ 型ガード
@@ -122,10 +123,11 @@ export default function StaffShiftPage() {
     return (
         <div className="p-4 max-w-md mx-auto bg-white shadow-lg rounded-lg mt-10">
             <h1 className="text-2xl font-bold mb-4 text-gray-800">シフト申請</h1>
-            <div className="p-4 bg-red-100 border-l-4 border-red-500 text-red-700">
+            <div className="mb-4 p-3 bg-red-100 border-l-4 border-red-500 text-red-700">
                 <p className="font-bold">アクセス拒否</p>
                 <p>スタッフ情報が見つかりません。あなたのLINE ID ({lineProfile?.userId?.substring(0, 8)}...) は名簿に登録されていません。</p>
             </div>
+            <p className="text-sm text-gray-500">LIFF ログイン済み: {isLoggedIn.toString()}</p>
         </div>
     );
   }
@@ -138,7 +140,7 @@ export default function StaffShiftPage() {
       </h1>
 
       <div className="mb-4 p-3 bg-blue-50 border-l-4 border-blue-500 text-blue-800 text-sm">
-          <p>ようこそ、**{staffData?.display_name}** さん</p>
+          <p>認証成功: **{staffData?.display_name}** さん</p>
           <p className="text-xs text-blue-600">スタッフID: {staffData?.id.substring(0, 8)}...</p>
       </div>
 
@@ -219,18 +221,7 @@ export default function StaffShiftPage() {
           </div>
         </div>
 
-        <div>
-          <label htmlFor="notes" className="block text-sm font-medium text-gray-700">備考</label>
-          <textarea
-            id="notes"
-            name="notes"
-            rows={3}
-            value={formData.notes || ''}
-            onChange={handleChange}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border"
-            placeholder="特別な希望があれば記入してください"
-          />
-        </div>
+        {/* notes の項目はDBスキーマに存在しないため削除 */}
 
         <button
           type="submit"
