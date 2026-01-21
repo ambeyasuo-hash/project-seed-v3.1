@@ -1,12 +1,16 @@
+// src/components/staff/shift/ShiftClient.tsx
 'use client';
 
-import { useLiff } from '@/components/liff/LiffProvider';
+// 修正 1: インポートパスを修正
+import { useLiff } from '@/components/providers/LiffProvider';
 import ShiftForm from '@/components/staff/shift/ShiftForm';
 import { useEffect, useState } from 'react';
 import { getStaffByLineId } from '@/app/staff/actions';
-import { Tables } from '@/lib/supabase/schema';
+// 修正 2: Tables/schema の代わりに Database をインポート
+import { Database } from '@/types/database'; 
 
-type Staff = Tables<'staff'>;
+// Staff型を定義 (Supabase CLI生成のDatabase型から抽出)
+type Staff = Database['public']['Tables']['staff']['Row'];
 
 interface ShiftClientProps {
   stores: { id: string; name: string }[];
@@ -26,7 +30,11 @@ export default function ShiftClient({ stores }: ShiftClientProps) {
         try {
           const result = await getStaffByLineId(lineProfile.userId);
           if ('success' in result) {
-            setStaff(result.data);
+            // 戻り値のプロパティ名が 'staff' である可能性を考慮し、
+            // actions.ts の戻り値に合わせて修正が必要。
+            // page.tsx の修正から 'staff' と仮定する。
+            // result.data は page.tsx で result.staff に修正したため、ここも修正
+            setStaff(result.staff as Staff); 
           } else {
             setFetchError(result.error);
             setStaff(null);
