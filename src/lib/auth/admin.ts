@@ -1,4 +1,4 @@
-// src/lib/auth/admin.ts
+// src/lib/auth/admin.ts の完全なコード (最終版)
 import { createManualClient } from "@/lib/supabase/server";
 import { Database } from "@/types/database";
 
@@ -20,15 +20,19 @@ type AdminAuthResult = {
  */
 export async function verifyAdmin(): Promise<AdminAuthResult> {
   const supabase = createManualClient(); 
+  console.log("DEBUG: verifyAdmin - Client created."); 
 
   // 1. セッション（認証）の確認
   const { data: { user }, error: sessionError } = await supabase.auth.getUser();
 
   if (sessionError || !user) {
+    console.log("DEBUG: verifyAdmin - UNAUTHENTICATED or Session Error:", sessionError?.message || 'No user');
     return { success: false, error: 'UNAUTHENTICATED', message: 'ログインしていません。' };
   }
-
+  
   // 2. staffレコードの取得と管理者フラグの確認
+  console.log("DEBUG: verifyAdmin - Attempting to fetch staff for user:", user.id); 
+
   const { data: staff, error: dbError } = await supabase
     .from('staff')
     .select('id, is_admin, display_name')
@@ -41,14 +45,17 @@ export async function verifyAdmin(): Promise<AdminAuthResult> {
   }
   
   if (!staff) {
+    console.log("DEBUG: verifyAdmin - Staff not found in Manual DB.");
     return { success: false, error: 'NOT_FOUND', message: 'スタッフ情報が見つかりません。' };
   }
   
-  const adminStaff = staff as AdminStaff; // 明示的な型アサーション
+  const adminStaff = staff as AdminStaff; 
 
   if (!adminStaff.is_admin) {
+    console.log("DEBUG: verifyAdmin - User found, but NOT ADMIN.");
     return { success: false, error: 'NOT_ADMIN', message: '管理者権限がありません。' };
   }
 
+  console.log("DEBUG: verifyAdmin - AUTH SUCCESS.");
   return { success: true, staff: adminStaff };
 }

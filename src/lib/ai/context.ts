@@ -6,7 +6,7 @@ import { createManualClient } from '../supabase/server';
  */
 export const getAiStaffContext = async () => {
   // 第二引数を true にし、ai_copilot_reader ロールとして接続
-  const supabase = createManualClient(true);
+  const supabase = createManualClient('ai_copilot_reader'); // <--- 修正: true から 'ai_copilot_reader' へ
   
   const { data, error } = await supabase
     .from('ai_staff_context')

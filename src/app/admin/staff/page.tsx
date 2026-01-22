@@ -6,8 +6,8 @@ import { StaffTable } from "./StaffTable"; // <--- 修正: ファイル名を正
 export default async function AdminStaffPage() {
   const result = await getAllStaffs();
   
- // 認証・エラー処理
- if (!result.success) {
+  // 認証・エラー処理
+  if (!result.success) {
     return (
       <div className="p-8 max-w-4xl mx-auto">
         <h1 className="text-2xl font-bold mb-4">管理者ダッシュボード - スタッフ名簿</h1>
@@ -23,6 +23,7 @@ export default async function AdminStaffPage() {
       </div>
     );
   }
+
   
   return (
     <div className="p-8 max-w-6xl mx-auto">
