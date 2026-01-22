@@ -34,4 +34,5 @@ export default async function AdminStaffPage() {
 
     </div>
   );
+
 }
