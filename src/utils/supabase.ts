@@ -1,13 +1,17 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Main DB (jngg...): ユーザー管理・暗号化ログ
+const mainUrl = process.env.DB_MAIN_URL;
+const mainKey = process.env.DB_MAIN_SERVICE_ROLE_KEY;
+const manualUrl = process.env.DB_MANUAL_URL;
+const manualKey = process.env.DB_MANUAL_SERVICE_ROLE_KEY;
+
+// ビルドエラー回避：値がない場合はダミーを入れ、実行時にエラーを出す構成
 export const supabaseMain = createClient(
-  process.env.DB_MAIN_URL!,
-  process.env.DB_MAIN_SERVICE_ROLE_KEY!
+  mainUrl || 'https://placeholder-url.supabase.co',
+  mainKey || 'placeholder-key'
 );
 
-// Manual DB (pcxv...): シフト・マニュアル・スタッフ情報
 export const supabaseManual = createClient(
-  process.env.DB_MANUAL_URL!,
-  process.env.DB_MANUAL_SERVICE_ROLE_KEY!
+  manualUrl || 'https://placeholder-url.supabase.co',
+  manualKey || 'placeholder-key'
 );
