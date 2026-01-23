@@ -1,17 +1,24 @@
 import { createClient } from '@supabase/supabase-js';
 
-const mainUrl = process.env.DB_MAIN_URL;
-const mainKey = process.env.DB_MAIN_SERVICE_ROLE_KEY;
-const manualUrl = process.env.DB_MANUAL_URL;
-const manualKey = process.env.DB_MANUAL_SERVICE_ROLE_KEY;
+// Vercel上の環境変数名に完全一致させて取得
+const targetUrl = process.env.DB_TARGET_URL;
+const targetKey = process.env.DB_TARGET_KEY;
+const manualUrl = process.env.MANUAL_DB_URL;
+const manualKey = process.env.MANUAL_DB_KEY;
 
-// ビルドエラー回避：値がない場合はダミーを入れ、実行時にエラーを出す構成
+/**
+ * Main DB (jngg...): ユーザー管理、暗号化された対話ログ、処方箋データ
+ * ビルド時のエラー回避のため、未定義時はプレースホルダーを使用
+ */
 export const supabaseMain = createClient(
-  mainUrl || 'https://placeholder-url.supabase.co',
-  mainKey || 'placeholder-key'
+  targetUrl || 'https://placeholder.supabase.co',
+  targetKey || 'placeholder-key'
 );
 
+/**
+ * Manual DB (pcxv...): スタッフ情報、シフト、マニュアル、業務知識
+ */
 export const supabaseManual = createClient(
-  manualUrl || 'https://placeholder-url.supabase.co',
+  manualUrl || 'https://placeholder.supabase.co',
   manualKey || 'placeholder-key'
 );
