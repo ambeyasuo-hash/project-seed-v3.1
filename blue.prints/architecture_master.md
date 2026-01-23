@@ -40,3 +40,30 @@ graph TD
     style PROXY fill:#f96,stroke:#333,stroke-width:2px
     style AI_ENGINE fill:#6c6,stroke:#333
     style STAFF_DATA fill:#69f,stroke:#f00,stroke-width:2px
+
+    graph TD
+    User((飲食店スタッフ)) -- LINE/RichMenu --> LINE[LINE Messaging API]
+    LINE -- Webhook --> Vercel[Vercel: /api/webhook]
+
+    subgraph "Switchboard (The Gateway)"
+        Vercel --> Auth{署名検証/Auth}
+        Auth -- OK --> Tenant[テナントID取得/自動登録]
+        Tenant --> Flags{機能フラグ確認}
+    end
+
+    subgraph "Logic Modules"
+        Flags -- "ai_chat: ON" --> Safety[Safety Brake v1.4]
+        Safety -- "SAFE" --> Gemini[Gemini 2.5 Flash-lite]
+        Safety -- "RISK" --> Shredder[即時破棄/警告]
+        
+        Gemini --> Encrypt[AES-256 アプリ層暗号化]
+        Encrypt --> DB[(Supabase Tokyo)]
+        
+        Flags -- "shift_pilot: ON" --> Shift[シフト管理モジュール]
+        Flags -- "fortune: ON" --> Fortune[占いモジュール]
+    end
+
+    Gemini -- 応答生成 --> Flex[Flex Message / Shredder UI]
+    Flex -- 返信 --> User
+    
+    DB -- 復号/分析 --> Dash[Hertz Dashboard]
