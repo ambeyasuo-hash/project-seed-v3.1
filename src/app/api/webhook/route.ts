@@ -18,6 +18,51 @@ async function sendReply(replyToken: string, messages: any[]) {
   });
 }
 
+// --- 過去ログカルーセル生成関数 ---
+function generateHistoryCarousel(logs: any[]) {
+  if (!logs || logs.length === 0) {
+    return { type: 'text', text: "消去できる過去の記録はありません。" };
+  }
+
+  return {
+    type: "flex",
+    altText: "過去の記憶を整理",
+    contents: {
+      type: "carousel",
+      contents: logs.map(log => ({
+        type: "bubble",
+        size: "micro",
+        body: {
+          type: "box",
+          layout: "vertical",
+          contents: [
+            { type: "text", text: log.summary || "（内容なし）", size: "xs", wrap: true, weight: "bold" },
+            { type: "text", text: new Date(log.created_at).toLocaleDateString('ja-JP'), size: "xxs", color: "#aaaaaa" }
+          ]
+        },
+        footer: {
+          type: "box",
+          layout: "vertical",
+          contents: [
+            {
+              type: "button",
+              style: "link",
+              height: "sm",
+              color: "#FF3B30",
+              action: {
+                type: "postback",
+                label: "消去",
+                data: `action=shred&log_id=${log.id}`,
+                displayText: "過去の記憶を消去しました"
+              }
+            }
+          ]
+        }
+      }))
+    }
+  };
+}
+
 export async function POST(req: NextRequest) {
   const signature = req.headers.get('x-line-signature');
   const body = await req.text();
@@ -31,75 +76,26 @@ export async function POST(req: NextRequest) {
   for (const event of events) {
     if (event.replyToken === "00000000000000000000000000000000") continue;
 
-    // --- Postback Handler ---
+    // --- 1. Postback Handler (物理削除) ---
     if (event.type === 'postback') {
       const params = new URLSearchParams(event.postback.data);
-      const action = params.get('action');
-
-      // 1. 物理削除実行
-      if (action === 'shred') {
+      if (params.get('action') === 'shred') {
         const logId = params.get('log_id');
-        if (logId) await supabaseMain.from('logs').delete().eq('id', logId);
-      }
-
-      // 2. シュレッダーモード切り替え
-      if (action === 'toggle_shredder') {
-        const enable = params.get('enable') === 'true';
-        await supabaseMain.from('tenants').update({ shredder_mode: enable }).eq('line_user_id', event.source.userId);
-        
-        if (enable) {
-          // 過去ログ10件取得
-          const { data: logs } = await supabaseMain
-            .from('logs')
-            .select('id, summary, created_at')
-            .eq('user_id', event.source.userId) // もしlogsにuser_idがなければtenant_idで代用
-            .order('created_at', { ascending: false })
-            .limit(10);
-
-          const carousel = {
-            type: "flex",
-            altText: "過去の記憶を整理",
-            contents: {
-              type: "carousel",
-              contents: (logs || []).map(log => ({
-                type: "bubble", size: "micro",
-                body: {
-                  type: "box", layout: "vertical", contents: [
-                    { type: "text", text: log.summary || "（内容なし）", size: "xs", wrap: true },
-                    { type: "text", text: new Date(log.created_at).toLocaleDateString(), size: "xxs", color: "#aaaaaa" }
-                  ]
-                },
-                footer: {
-                  type: "box", layout: "vertical", contents: [
-                    { type: "button", style: "link", height: "sm", color: "#FF3B30", 
-                      action: { type: "postback", label: "消去", data: `action=shred&log_id=${log.id}`, displayText: "過去の記憶を消去しました" }
-                    }
-                  ]
-                }
-              }))
-            }
-          };
-
-          await sendReply(event.replyToken, [
-            { type: 'text', text: "シュレッダーモードをONにしました。これ以降の返信に消去ボタンがつきます。過去の記録もここから消去可能です。" },
-            carousel
-          ]);
-        } else {
-          await sendReply(event.replyToken, [{ type: 'text', text: "シュレッダーモードをOFFにしました。スレッドをクリーンに保ちます。" }]);
+        if (logId) {
+          await supabaseMain.from('logs').delete().eq('id', logId);
+          console.log(`[SHREDDER] Deleted log: ${logId}`);
         }
       }
       continue;
     }
 
-    // --- Message Handler ---
+    // --- 2. Message Handler ---
     if (event.type === 'message' && event.message.type === 'text') {
       try {
         const lineUserId = event.source.userId;
         const userText = event.message.text;
 
-        const aiResult = await analyzeStaffSentiment(userText);
-        
-        // テナント情報取得（shredder_modeも含める）
+        // A. テナント/ユーザー情報の取得（モード確認）
         let { data: tenant } = await supabaseMain
           .from('tenants')
           .select('*')
@@ -114,6 +110,39 @@ export async function POST(req: NextRequest) {
           tenant = newTenant;
         }
 
+        // B. 特殊コマンド「シュレッダー切替」の検知
+        if (userText === 'シュレッダー切替') {
+          const nextMode = !tenant?.shredder_mode;
+          await supabaseMain
+            .from('tenants')
+            .update({ shredder_mode: nextMode })
+            .eq('line_user_id', lineUserId);
+
+          if (nextMode) {
+            // ON時：過去10件を取得してカルーセル表示
+            const { data: pastLogs } = await supabaseMain
+              .from('logs')
+              .select('id, summary, created_at')
+              .eq('tenant_id', tenant?.id)
+              .order('created_at', { ascending: false })
+              .limit(10);
+
+            return await sendReply(event.replyToken, [
+              { type: 'text', text: "【シュレッダーモード：ON】\nこれからの返信に消去ボタンがつきます。過去の記録もここから消去できます。" },
+              generateHistoryCarousel(pastLogs || [])
+            ]);
+          } else {
+            // OFF時
+            return await sendReply(event.replyToken, [
+              { type: 'text', text: "【シュレッダーモード：OFF】\nこれ以降、AIの返信に消去ボタンはつきません。" }
+            ]);
+          }
+        }
+
+        // C. 通常のAI対話ロジック
+        const aiResult = await analyzeStaffSentiment(userText);
+
+        // D. ログ保存
         const { data: logRecord } = await supabaseMain
           .from('logs')
           .insert({
@@ -126,9 +155,9 @@ export async function POST(req: NextRequest) {
             sender: 'USER'
           }).select('id').single();
 
-        // 返信の分岐
+        // E. モードに応じた返信の出し分け
         if (tenant?.shredder_mode) {
-          // ONならコンパクトなFlex
+          // モードON: ボタン付きFlex
           await sendReply(event.replyToken, [{
             type: 'flex',
             altText: 'AI返信（消去ボタン付）',
@@ -142,14 +171,19 @@ export async function POST(req: NextRequest) {
               footer: {
                 type: 'box', layout: 'vertical', contents: [
                   { type: 'button', style: 'link', height: 'sm', color: '#FF3B30',
-                    action: { type: 'postback', label: '消去', data: `action=shred&log_id=${logRecord?.id}`, displayText: '記憶を消去しました' }
+                    action: { 
+                      type: 'postback', 
+                      label: 'この記憶を消去', 
+                      data: `action=shred&log_id=${logRecord?.id}`,
+                      displayText: '今の記憶をシュレッダーにかけました。'
+                    }
                   }
                 ]
               }
             }
           }]);
         } else {
-          // OFFならシンプルなテキスト
+          // モードOFF: シンプルなテキスト
           await sendReply(event.replyToken, [{ type: 'text', text: aiResult.reply }]);
         }
 
