@@ -1,69 +1,79 @@
 # Project SEED v2: マスターアーキテクチャ統合図 v1.0
 
 ## 1. 全体構造 (Architecture Map)
-```mermaid
+code
+Mermaid
 graph TD
-    subgraph "User Interface (Vercel)"
-        LIFF[Staff: LINE LIFF / Time-First UX]
-        ADMIN_UI[Manager: Dashboard / Settings]
+    subgraph "User Interface (Front-end Layer)"
+        LIFF[Staff: LINE LIFF / 雑談・マニュアル投稿]
+        ADMIN_UI[Manager: Dashboard / マニュアル査読・承認]
     end
 
-    subgraph "Logic Layer (Next.js App Router)"
-        PROXY[proxy.ts: Security & Routing Gateway]
-        AUTH[Auth Service: Hybrid SSR Auth]
-        FEAT_GATE[isFeatureEnabled: Function Switch]
-        AI_ENGINE[AI Engine: Gemini 2.5 Flash]
+    subgraph "Logic Layer (Vercel Node.js / Serverless)"
+        PROXY[proxy.ts: 通信暗号化 & ルーティング]
+        AUTH[Auth Service: Hybrid SSR Auth / テナント識別]
+        FEAT_GATE[isFeatureEnabled: 機能フラグ配電盤]
+        
+        subgraph "Intelligence Core (Project Knoredge Engine)"
+            AI_ENGINE[AI Engine: Gemini 2.5 Flash]
+            SAFETY[Safety Brake v1.4: 危機検知]
+            FORMATTER[AI Formatter: 投稿内容の構造化]
+        end
+
+        subgraph "Workflow Engine"
+            APPROVE_LOGIC[承認フロー管理: Draft to Publish]
+        end
     end
 
     subgraph "Data Layer (Supabase Dual-Core)"
-        subgraph "Main DB (jngg...)"
-            AUTH_DATA[(Auth / Sessions)]
-            AI_LOGS[(Encrypted Chat Logs)]
+        subgraph "Main DB: jngg... (Core Service)"
+            AUTH_DATA[(Auth / セッション管理)]
+            AI_LOGS[(処方箋 / 暗号化チャットログ)]
         end
-        subgraph "Manual DB (pcxv...)"
-            STAFF_DATA[(Staff / Skills / Wages)]
-            SHIFT_DATA[(Shift Requests / Slots)]
-            MANUAL_DATA[(Knowledge / Manuals)]
+        subgraph "Manual/Shift DB: pcxv... (Business Logic)"
+            STAFF_DATA[(スタッフスキル / 賃金)]
+            SHIFT_DATA[(シフトリクエスト / スロット)]
+            
+            subgraph "MANUAL_DATA (Living Manual)"
+                M_DRAFT[(草稿: Pending)]
+                M_PUB[(公開: Live Knowledge)]
+                M_HIST[(変更履歴: Revision)]
+            end
         end
     end
 
+    %% Living Manual Core Flows
+    LIFF -->|① 気づき・画像をアップロード| PROXY
+    PROXY -->|② 下書き作成| FORMATTER
+    FORMATTER -->|③ 構造化データ| M_DRAFT
+    
+    M_DRAFT -->|④ 承認依頼通知| ADMIN_UI
+    ADMIN_UI -->|⑤ 査読・編集・公開ボタン| APPROVE_LOGIC
+    APPROVE_LOGIC -->|⑥ 公開ステータスへ昇格| M_PUB
+    APPROVE_LOGIC -->|履歴保存| M_HIST
+
+    %% AI as a true Pilot (Integration)
+    AI_ENGINE -.->|ai_copilot_reader| M_PUB
+    M_PUB -.->|⑦ 現場への回答・検索| AI_ENGINE
+    AI_ENGINE -->|回答生成| LIFF
+
+    %% Business Flows
+    ADMIN_UI -->|Update Policy| STAFF_DATA & SHIFT_DATA
+    LIFF -->|提出/閲覧| SHIFT_DATA
+    
+    %% Common Logic Flow
     LIFF & ADMIN_UI --> PROXY
     PROXY --> AUTH
     AUTH --> AUTH_DATA
     PROXY --> FEAT_GATE
-    FEAT_GATE --> AI_ENGINE
-    AI_ENGINE --> AI_LOGS
-    AI_ENGINE -.->|READ via ai_copilot_reader| STAFF_DATA & SHIFT_DATA
-    ADMIN_UI -->|Update Policy| STAFF_DATA & SHIFT_DATA
-    LIFF -->|Submit Request| SHIFT_DATA
+    FEAT_GATE -- "マニュアル/チャットON" --> AI_ENGINE
+    AI_ENGINE --> SAFETY
+    SAFETY -- "SAFE" --> AI_LOGS
 
-    style PROXY fill:#f96,stroke:#333,stroke-width:2px
-    style AI_ENGINE fill:#6c6,stroke:#333
-    style STAFF_DATA fill:#69f,stroke:#f00,stroke-width:2px
-
-    graph TD
-    User((飲食店スタッフ)) -- LINE/RichMenu --> LINE[LINE Messaging API]
-    LINE -- Webhook --> Vercel[Vercel: /api/webhook]
-
-    subgraph "Switchboard (The Gateway)"
-        Vercel --> Auth{署名検証/Auth}
-        Auth -- OK --> Tenant[テナントID取得/自動登録]
-        Tenant --> Flags{機能フラグ確認}
-    end
-
-    subgraph "Logic Modules"
-        Flags -- "ai_chat: ON" --> Safety[Safety Brake v1.4]
-        Safety -- "SAFE" --> Gemini[Gemini 2.5 Flash-lite]
-        Safety -- "RISK" --> Shredder[即時破棄/警告]
-        
-        Gemini --> Encrypt[AES-256 アプリ層暗号化]
-        Encrypt --> DB[(Supabase Tokyo)]
-        
-        Flags -- "shift_pilot: ON" --> Shift[シフト管理モジュール]
-        Flags -- "fortune: ON" --> Fortune[占いモジュール]
-    end
-
-    Gemini -- 応答生成 --> Flex[Flex Message / Shredder UI]
-    Flex -- 返信 --> User
-    
-    DB -- 復号/分析 --> Dash[Hertz Dashboard]
+    %% Styling
+    style PROXY fill:#f96,stroke:#333,stroke-width:2px,color:#fff
+    style AI_ENGINE fill:#6c6,stroke:#333,color:#fff
+    style STAFF_DATA fill:#69f,stroke:#333,color:#fff
+    style M_PUB fill:#f0f,stroke:#333,stroke-width:3px,color:#fff
+    style M_DRAFT fill:#ddd,stroke:#333,stroke-dasharray: 5 5
+    style AI_LOGS fill:#ff9,stroke:#333,color:#000
