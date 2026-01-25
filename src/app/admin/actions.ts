@@ -1,11 +1,10 @@
-// src/app/admin/actions.ts
 'use server';
 
 import { verifyAdmin } from "@/lib/auth/admin";
-import { createManualClient } from "@/lib/supabase/server";
-import { Database } from "@/types/database";
+import { createManualClient } from '@/lib/supabase/server';
+import { Tables as TablesManual } from "@/types/database_manual"; // Manual DBの型定義をインポート
 
-type Staff = Database['public']['Tables']['staff']['Row'];
+type Staff = TablesManual<'staff'>; // Manual DBの型からstaffテーブルの行型を取得
 type StaffList = Staff[];
 
 type StaffResult = { 

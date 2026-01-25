@@ -1,7 +1,7 @@
 import { createServerClient } from '@supabase/auth-helpers-nextjs'; // auth-helpersを使用
 import { cookies } from 'next/headers';
-import { Database } from '@/types/database'; // Manual DBの型と仮定
-import { Database as DatabaseMain, Tables } from '@/types/database_main'; // Main DBの型をインポート
+import { Database as DatabaseManual } from '@/types/database_manual'; // Manual DBの型をインポート
+import { Database as DatabaseMain } from '@/types/database_main'; // Main DBの型をインポート
 
 // サーバーコンポーネント用クライアント（Manual DB）
 export const createManualClient = (role?: 'ai_copilot_reader') => {
@@ -32,7 +32,7 @@ export const createManualClient = (role?: 'ai_copilot_reader') => {
       : undefined,
   };
 
-  return createServerClient<Database>(
+  return createServerClient<DatabaseManual>(
     process.env.MANUAL_DB_URL!,
     process.env.MANUAL_DB_KEY!,
     options
