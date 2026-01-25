@@ -12,3 +12,24 @@ export function encrypt(text: string): string {
   // IV:TAG:ENCRYPTED_DATA の形式で保存
   return `${iv.toString('hex')}:${tag}:${encrypted}`;
 }
+
+// ... 既存の encrypt 関数の後に追加 ...
+
+export function decrypt(encryptedText: string): string {
+  // IV:TAG:ENCRYPTED_DATA の形式を分割
+  const parts = encryptedText.split(':');
+  if (parts.length !== 3) {
+    throw new Error('Invalid encrypted data format.');
+  }
+  const iv = Buffer.from(parts[0], 'hex');
+  const tag = Buffer.from(parts[1], 'hex');
+  const encrypted = parts[2];
+
+  const decipher = crypto.createDecipheriv(ALGORITHM, Buffer.from(ENCRYPTION_KEY), iv);
+  decipher.setAuthTag(tag);
+
+  let decrypted = decipher.update(encrypted, 'hex', 'utf8');
+  decrypted += decipher.final('utf8');
+
+  return decrypted;
+}
