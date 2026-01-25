@@ -1,69 +1,59 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+// 最新の gemini-2.0-flash-lite を指定
+const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-lite" });
 
-export async function analyzeStaffSentiment(userMessage: string) {
-  // モデル名の指定（gemini-2.0-flash または gemini-1.5-flash）
-  // ※制限が厳しい場合は 1.5-flash への変更を検討してください
-  const model = genAI.getGenerativeModel({ 
-    model: "gemini-2.0-flash",
-    generationConfig: { 
-      responseMimeType: "application/json",
-      temperature: 0.1 
-    }
-  });
-
+export async function analyzeStaffSentiment(text: string) {
   const prompt = `
-    飲食店スタッフのメンタルケアと組織改善のアドバイザーとして、以下の発言を分析してください。
-    
-    発言: "${userMessage}"
+あなたは飲食店の店長を支える「AI副操縦士」です。
+スタッフの「本音（叫び）」を分析し、以下のJSON形式で回答してください。
 
-    必ず以下のJSONフォーマットで返してください。
-    {
-      "reply": "スタッフへの共感メッセージ",
-      "category": "人間関係/設備/給与/オペレーション/その他",
-      "impact": 1から10の数値,
-      "summary": "20文字以内の要約",
-      "prescription": "経営者への具体的な改善案"
-    }
+【制約事項】
+1. JSON以外のテキストは一切含めないでください。
+2. 返信はスタッフに寄り添いつつ、短く簡潔に（2-3行）。
+3. 処方箋は店長向けの組織改善アクションです。
+
+【出力フォーマット】
+{
+  "reply": "スタッフへの温かい返信",
+  "category": "人間関係/設備/待遇/オペレーション/その他",
+  "impact": 1から10の数値（深刻度）,
+  "summary": "20文字以内の要約",
+  "prescription": "店長への具体的アドバイス"
+}
+
+【スタッフの発言】
+"${text}"
   `;
 
   try {
     const result = await model.generateContent(prompt);
     const response = await result.response;
-    let text = response.text();
+    let rawText = response.text();
     
-    // デバッグログ: AIの生の応答をVercelログに記録（原因特定のため）
-    console.log("Gemini Raw Response:", text);
-
-    // JSON以外の文字（Markdownの枠など）が混じっている場合のクリーニング
-    text = text.replace(/```json/g, "").replace(/```/g, "").trim();
+    // Markdownの装飾を除去
+    const cleanJson = rawText.replace(/```json|```/g, "").trim();
+    const parsed = JSON.parse(cleanJson);
     
-    const parsed = JSON.parse(text);
+    // 配列で返ってきた場合は最初の要素を取得
+    const aiData = Array.isArray(parsed) ? parsed[0] : parsed;
 
     return {
-      reply: parsed.reply || "お疲れ様です。現場の声をしっかり受け止めました。",
-      category: parsed.category || "その他",
-      impact: Number(parsed.impact) || 5,
-      summary: parsed.summary || "メッセージ受信",
-      prescription: parsed.prescription || "継続的なモニタリングを推奨します"
+      reply: aiData.reply || "お疲れ様です。何か力になれることがあれば教えてくださいね。",
+      category: aiData.category || "その他",
+      impact: aiData.impact || 1,
+      summary: aiData.summary || "内容不明",
+      prescription: aiData.prescription || "特記事項なし"
     };
-
-  } catch (error: any) {
-    // Vercelのログに詳細なエラー内容を出力
-    console.error("Gemini System Error:", {
-      message: error.message,
-      stack: error.stack,
-      status: error?.status // API制限（429）などのステータス確認
-    });
-
-    // ユーザーへの返信（エラー時）
+  } catch (error) {
+    console.error("Gemini Analysis Error:", error);
     return {
-      reply: "（現在、AI副操縦士が一時的に混み合っております。少し時間を置いてから再度お声がけください）", 
+      reply: "お疲れ様です。少し落ち着いたら、またお話ししましょう。",
       category: "エラー",
       impact: 0,
-      summary: "API接続エラー",
-      prescription: "APIクォータ制限または通信エラーを確認してください"
+      summary: "システムエラー",
+      prescription: "API接続を確認してください"
     };
   }
 }
