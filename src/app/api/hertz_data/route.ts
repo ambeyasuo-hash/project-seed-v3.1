@@ -1,24 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseClientMain } from '@/utils/supabase'; // Main DB (暗号化ログ)
+import { createMainClient } from '@/lib/supabase/server'; // サーバーサイドクライアント
 import { decrypt } from '@/utils/crypto'; // 復号処理
+import { verifyAdmin } from '@/lib/auth/admin'; // 管理者認証関数
+import { Tables } from '@/types/database_main'; // Main DBの型定義をインポート
 
-// logsテーブルから取得する行の型定義 (簡略化)
-interface LogRow {
-    content_encrypted: string;
-    category: string;
-    impact: number;
-    summary: string;
-    prescription: string;
-    created_at: string;
-}
+// logsテーブルから取得する行の型定義 (selectで取得するカラムのみに限定)
+type LogRow = Pick<Tables<'logs'>, 'content_encrypted' | 'category' | 'impact' | 'summary' | 'prescription' | 'created_at'>;
 
 // 現場の叫び（ログ）を集計・分析するAPIエンドポイント
 export async function GET(req: NextRequest) {
-    // 【重要】ダッシュボードアクセスにおける認証はフェーズ2で実装するため、
-    // ここでは一時的に認証をスキップし、全ログを取得するロジックを優先します。
+    
+    // 認証チェック
+    try {
+        const isAdmin = await verifyAdmin();
+        if (!isAdmin) {
+            // 「鏡と処方箋」の哲学に基づき、経営層以外はアクセス禁止
+            return NextResponse.json({ error: 'Unauthorized. Admin access required for Hertz Dashboard.' }, { status: 401 });
+        }
+    } catch (e) {
+        console.error('Admin verification failed:', e);
+        return NextResponse.json({ error: 'Authentication service error.' }, { status: 500 });
+    }
 
     try {
-        const supabaseMain = getSupabaseClientMain();
+        const supabaseMain = createMainClient();
 
         // logsテーブルから必要なフィールドを取得
         const { data: logs, error } = await supabaseMain
@@ -40,8 +45,7 @@ export async function GET(req: NextRequest) {
             let decryptedContent = '復号失敗';
             try {
                 // content_encrypted は AES-256-GCM で暗号化された現場の「生の叫び」
-                // 復号キーは環境変数から取得
-                decryptedContent = decrypt(log.content_encrypted, process.env.ENCRYPTION_KEY!);
+                decryptedContent = decrypt(log.content_encrypted);
             } catch (e) {
                 console.error('Decryption failed for a log entry:', e);
             }
@@ -49,17 +53,13 @@ export async function GET(req: NextRequest) {
             // 復号された生の叫びと、AIによって構造化されたデータを集計用に整形
             return {
                 timestamp: log.created_at,
-                raw_scream: decryptedContent, // 現場の叫び
+                raw_scream: decryptedContent, // 現場の叫び (鏡)
                 category: log.category,
-                impact: log.impact, // 1〜5の数値
+                impact: log.impact, // 1〜5の数値 (Hertz)
                 summary: log.summary,
                 prescription: log.prescription, // 経営層への処方箋
             };
         });
-
-        // ここで集計ロジック（例: categoryごとのimpact平均、prescriptionの頻出ワード分析など）
-        // を追加することも可能ですが、一旦は生の構造化データを返します。
-        // フロントエンドでの可視化を容易にするため、この形式で進めます。
 
         return NextResponse.json({
             status: 'success',

@@ -1,7 +1,7 @@
-// src/lib/supabase/server.ts
 import { createServerClient } from '@supabase/auth-helpers-nextjs'; // auth-helpersを使用
 import { cookies } from 'next/headers';
-import { Database } from '@/types/database';
+import { Database } from '@/types/database'; // Manual DBの型と仮定
+import { Database as DatabaseMain, Tables } from '@/types/database_main'; // Main DBの型をインポート
 
 // サーバーコンポーネント用クライアント（Manual DB）
 export const createManualClient = (role?: 'ai_copilot_reader') => {
@@ -33,8 +33,8 @@ export const createManualClient = (role?: 'ai_copilot_reader') => {
   };
 
   return createServerClient<Database>(
-    process.env.MANUAL_DB_URL!, // <--- 修正: SUPABASE_DB_URL から MANUAL_DB_URL へ
-    process.env.MANUAL_DB_KEY!, // <--- 修正: SUPABASE_DB_KEY から MANUAL_DB_KEY へ
+    process.env.MANUAL_DB_URL!,
+    process.env.MANUAL_DB_KEY!,
     options
   );
 };
@@ -42,7 +42,7 @@ export const createManualClient = (role?: 'ai_copilot_reader') => {
 // サーバーコンポーネント用クライアント（Main DB）
 export const createMainClient = () => {
   const cookieStore = cookies();
-  return createServerClient<Database>(
+  return createServerClient<DatabaseMain>(
     process.env.DB_TARGET_URL!,
     process.env.DB_TARGET_KEY!,
     { cookies: {

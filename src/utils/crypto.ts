@@ -13,8 +13,10 @@ export function encrypt(text: string): string {
   return `${iv.toString('hex')}:${tag}:${encrypted}`;
 }
 
-// ... 既存の encrypt 関数の後に追加 ...
-
+/**
+ * AES-256-GCMで暗号化されたデータ (IV:TAG:ENCRYPTED_DATA) を復号する。
+ * 暗号化キーは環境変数から取得するため、引数は暗号化テキストのみ。
+ */
 export function decrypt(encryptedText: string): string {
   // IV:TAG:ENCRYPTED_DATA の形式を分割
   const parts = encryptedText.split(':');
