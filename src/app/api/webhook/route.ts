@@ -38,7 +38,8 @@ export async function POST(req: NextRequest) {
   if (hash !== signature) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { events } = JSON.parse(body);
-
+  console.log('--- Webhook Events Received Successfully ---');
+  
   for (const event of events) {
     if (event.replyToken === "00000000000000000000000000000000") continue;
 
@@ -64,8 +65,8 @@ export async function POST(req: NextRequest) {
         const lineUserId = event.source.userId;
         const userText = event.message.text.trim();
 
-        // 2. テナント情報取得（存在しなければ新規作成）
-        let { data: tenant } = await supabaseMain
+        // 2. テナント情報取得
+        let { data: tenant, error: tenantError } = await supabaseMain
           .from('tenants')
           .select('id, shredder_mode')
           .eq('line_user_id', lineUserId)
@@ -110,14 +111,18 @@ export async function POST(req: NextRequest) {
         }
 
         // 4. 通常のAI対話ロジック
-        const aiResult = await analyzeStaffSentiment(userText);
+        console.log('--- Step 4: Starting AI Analysis ---');
+        const aiResult = await analyzeStaffSentiment(userText); // const は一度だけ
+        console.log('--- Step 4: AI Result ---', JSON.stringify(aiResult));
         
         // 5. DB保存
-        const { data: logRecord } = await supabaseMain
+        console.log('--- Step 5: Saving to DB ---');
+        const encrypted = encrypt(userText);
+        const { data: logRecord, error: insertError } = await supabaseMain // logRecordをここで定義
           .from('logs')
           .insert({
             tenant_id: tenant!.id,
-            content_encrypted: encrypt(userText),
+            content_encrypted: encrypted,
             category: aiResult.category,
             impact: aiResult.impact,
             summary: aiResult.summary,
@@ -125,24 +130,24 @@ export async function POST(req: NextRequest) {
             sender: 'USER'
           }).select('id').single();
 
+        if (insertError) console.error('--- Step 5 Error ---', insertError.message);
+
         // 6. 返信の分岐と堅牢化
         const safeReply = aiResult.reply && aiResult.reply.length > 0 
           ? aiResult.reply 
-          : "（システムエラーにより応答できませんでした。お時間を置いてお試しください。）";
+          : "（システムエラー：AIの応答が空でした）";
 
         if (tenant?.shredder_mode) {
-          // ONなら修正されたFlex Messageを使用
-          const flexMessage = compactShredderResponse(safeReply, logRecord?.id);
+          const flexMessage = compactShredderResponse(safeReply, logRecord?.id); // logRecordが参照可能に
           await sendReply(event.replyToken, [flexMessage]);
         } else {
-          // OFFならシンプルなテキスト
           await sendReply(event.replyToken, [{ type: 'text', text: safeReply }]);
         }
 
       } catch (err: any) {
-        console.error('Webhook Error:', err.message);
-        // エラー時にも応答を試みる（LINEの迷惑リトライを防ぐため）
-        await sendReply(event.replyToken, [{ type: 'text', text: "処理中にエラーが発生しました。時間を置いてお試しください。" }]);
+        // ここが実行されている場合、重大な実行エラー（APIキー不足、暗号化失敗など）
+        console.error('--- Critical Webhook Catch ---', err.stack || err.message);
+        await sendReply(event.replyToken, [{ type: 'text', text: `処理中にエラーが発生しました。内容: ${err.message}` }]);
       }
     }
   }
