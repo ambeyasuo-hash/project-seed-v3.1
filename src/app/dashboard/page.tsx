@@ -1,13 +1,15 @@
 import { createManualClient } from "@/lib/supabase/server";
 
 export default async function DashboardPage() {
-  const supabase = createManualClient();
-
-  // Manual DB からスタッフ一覧を取得
-  const { data: staff, error } = await supabase
-    .from('staff')
-    .select('*')
-    .order('name', { ascending: true });
+    // await を追加
+    const supabase = await createManualClient();
+  
+    // Manual DB からスタッフ一覧を取得
+    const { data: staff, error } = await supabase
+      .from('staff')
+      .select('*')
+      // name ではなく display_name でソート
+      .order('display_name', { ascending: true });
 
   if (error) {
     console.error('Error fetching staff:', error);

@@ -7,7 +7,8 @@ import { revalidatePath } from "next/cache";
 export async function login(formData: FormData) {
   const email = formData.get('email') as string;
   const password = formData.get('password') as string;
-  const supabase = createMainClient();
+  // await を追加
+  const supabase = await createMainClient(); 
 
   const { error } = await supabase.auth.signInWithPassword({
     email,
