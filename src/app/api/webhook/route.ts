@@ -66,19 +66,29 @@ export async function POST(req: NextRequest) {
         const userText = event.message.text.trim();
 
         // 2. テナント情報取得
-        let { data: tenant, error: tenantError } = await supabaseMain
+        let { data: tenant, error: fetchError } = await supabaseMain
           .from('tenants')
           .select('id, shredder_mode')
           .eq('line_user_id', lineUserId)
           .single();
 
         if (!tenant) {
-          const { data: newTenant } = await supabaseMain
+          console.log('--- Tenant not found, attempting insert ---');
+          const { data: newTenant, error: insertError } = await supabaseMain
             .from('tenants')
             .insert({ line_user_id: lineUserId, name: '新規スタッフ' })
-            .select('id, shredder_mode').single();
+            .select('id, shredder_mode')
+            .single();
+          
+          if (insertError) {
+            console.error('--- Tenant Insert Error ---', insertError.message);
+            throw new Error(`テナント作成失敗: ${insertError.message}`);
+          }
           tenant = newTenant;
         }
+
+        // ここで tenant が null の場合はエラーを投げて後続の tenant!.id を防ぐ
+        if (!tenant) throw new Error('テナント情報の取得・作成に失敗しました。');
 
         // 3. 【テキストコマンド検知】シュレッダーモード切り替え
         if (userText === 'シュレッダー切替') {
