@@ -7,7 +7,7 @@ import { useEffect, useState } from 'react';
 import { Database } from '@/types/database';
 
 // Staff型を定義 (Supabase CLI生成のDatabase型から抽出)
-type Staff = Database['public']['Tables']['staff']['Row'];
+type Staff = Database['public']['Tables']['staff_data']['Row'];
 
 export default function StaffShiftPage() {
   const { isLiffInitialized, isLoggedIn, lineProfile, error } = useLiff();

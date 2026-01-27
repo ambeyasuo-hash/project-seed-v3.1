@@ -5,7 +5,7 @@ import { createManualClient } from '@/lib/db/server'
 import { Database } from '@/types/database'
 
 // 戻り値の型定義
-type StaffResult = { success: true, staff: Database['public']['Tables']['staff']['Row'] } | { error: string }
+type StaffResult = { success: true, staff: Database['public']['Tables']['staff_data']['Row'] } | { error: string }
 
 /**
  * LINE ID (liff_user_id) を基に、Manual DB からスタッフ情報を取得する。

@@ -2,7 +2,7 @@
 import { Database } from "@/types/database";
 
 // 必要なカラムのみを含む Staff の型
-type DisplayStaff = Pick<Database['public']['Tables']['staff']['Row'], 
+type DisplayStaff = Pick<Database['public']['Tables']['staff_data']['Row'], 
   'id' | 'display_name' | 'employment_type' | 'is_admin' | 'created_at' | 'line_id'
 >;
 

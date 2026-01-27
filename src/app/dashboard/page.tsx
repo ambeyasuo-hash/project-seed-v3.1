@@ -6,7 +6,7 @@ export default async function DashboardPage() {
   
     // Manual DB からスタッフ一覧を取得
     const { data: staff, error } = await supabase
-      .from('staff')
+      .from('staff_data')
       .select('*')
       // name ではなく display_name でソート
       .order('display_name', { ascending: true });
