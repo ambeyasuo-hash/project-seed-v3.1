@@ -13,9 +13,9 @@ export async function GET(req: NextRequest) {
     // 認証チェックの追加
     try {
         // 認証・認可の検証
-        const isAdmin = await verifyAdmin();
-        if (!isAdmin) {
-            return NextResponse.json({ error: 'Unauthorized. Admin access required.' }, { status: 401 });
+        const authResult = await verifyAdmin();
+        if (!authResult.success) {
+            return NextResponse.json({ error: authResult.message || 'Unauthorized. Admin access required.' }, { status: 401 });
         }
     } catch (e) {
         console.error('Admin verification failed:', e);
