@@ -15,7 +15,7 @@ export async function updateFeatureFlag(
   isEnabled: boolean
 ): Promise<{ success: boolean; message: string }> {
   try {
-    const supabase = createMainClient();
+    const supabase = await createMainClient();
     
     // 1. 現在の tenant_flags を取得
     const { data: tenantData, error: fetchError } = await supabase
