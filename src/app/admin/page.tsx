@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 // src/app/admin/page.tsx (新規作成)
 import { redirect } from 'next/navigation';
 

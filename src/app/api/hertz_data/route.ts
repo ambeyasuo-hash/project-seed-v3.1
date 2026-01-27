@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { createMainClient } from '@/lib/db/server'; // サーバーサイドクライアント
 import { decrypt } from '@/utils/crypto'; // 復号処理

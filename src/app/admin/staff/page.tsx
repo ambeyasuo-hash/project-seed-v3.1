@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 // src/app/admin/staff/page.tsx
 import { getAllStaffs } from "../actions";
 import { StaffTable } from "./StaffTable"; // <--- 修正: ファイル名を正しくインポート
