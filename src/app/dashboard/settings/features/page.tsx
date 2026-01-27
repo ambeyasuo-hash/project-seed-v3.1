@@ -1,5 +1,5 @@
 import React from 'react';
-import { createMainClient } from '@/lib/supabase/server';
+import { createMainClient } from '@/lib/db/server';
 import FeatureToggleForm from './feature-toggle-form';
 
 // 仮のテナントID（開発用ハードコード）

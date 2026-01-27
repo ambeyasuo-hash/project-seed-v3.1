@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createMainClient } from '@/lib/supabase/server'; // サーバーサイドクライアント
+import { createMainClient } from '@/lib/db/server'; // サーバーサイドクライアント
 import { decrypt } from '@/utils/crypto'; // 復号処理
 import { verifyAdmin } from '@/lib/auth/admin'; // 管理者認証関数
 import { Tables } from '@/types/database_main'; // Main DBの型定義をインポート
@@ -41,23 +41,14 @@ export async function GET(req: NextRequest) {
         }
 
         const hertzData = logs.map((log: LogRow) => {
-            // 暗号化された生の声を復号
-            let decryptedContent = '復号失敗';
-            try {
-                // content_encrypted は AES-256-GCM で暗号化された現場の「生の叫び」
-                decryptedContent = decrypt(log.content_encrypted); // 引数を1つに修正
-            } catch (e) {
-                console.error('Decryption failed for a log entry:', e);
-            }
-
-            // 復号された生の叫びと、AIによって構造化されたデータを集計用に整形
+            // raw_scream の復号ロジックを完全に削除し、AIの分析結果のみを抽出
             return {
                 timestamp: log.created_at,
-                raw_scream: decryptedContent, // 現場の叫び
+                // raw_scream: decryptedContent, // ← 信頼を守るため廃止
                 category: log.category,
-                impact: log.impact, // 1〜5の数値
+                impact: log.impact, 
                 summary: log.summary,
-                prescription: log.prescription, // 経営層への処方箋
+                prescription: log.prescription, 
             };
         });
 

@@ -1,12 +1,12 @@
 import 'server-only';
 // 修正1: Main DBクライアントから Manual DBクライアントに変更
-import { createManualClient } from '@/lib/supabase/server';
+import { createManualClient } from '@/lib/db/server';
 // 修正2: Manual DBの型定義をインポート
 import { Tables as TablesManual } from '@/types/database_manual';
 
 // 修正3: Manual DBの型定義から Staff 型を正確に定義
 export type Staff = Pick<
-    TablesManual<'staff'>, // <--- TablesManual<'staff'>に変更
+    TablesManual<'staff_data'>, // <--- TablesManual<'staff'>に変更
     'id' | 'line_id' | 'display_name' | 'created_at' | 'employment_type'
 >;
 
@@ -23,7 +23,7 @@ export async function getAllStaff() {
         // エラーメッセージの型定義に基づいて、存在しない role, updated_at を削除し、employment_type を追加する
         // 修正5: select句は変更なし（型エラーは修正3と修正4で解消される）
         const { data: staff, error } = await supabase
-            .from('staff')
+            .from('staff_data')
             .select(`
                 id,
                 line_id,

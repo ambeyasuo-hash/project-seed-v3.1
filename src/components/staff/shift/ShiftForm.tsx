@@ -3,7 +3,7 @@
 
 import { Database } from '@/types/database';
 
-type Staff = Database['public']['Tables']['staff']['Row'];
+type Staff = Database['public']['Tables']['staff_data']['Row'];
 
 interface ShiftFormProps {
   staff: Staff;

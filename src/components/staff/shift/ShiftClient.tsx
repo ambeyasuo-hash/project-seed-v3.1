@@ -10,7 +10,7 @@ import { getStaffByLineId } from '@/app/staff/actions';
 import { Database } from '@/types/database'; 
 
 // Staff型を定義 (Supabase CLI生成のDatabase型から抽出)
-type Staff = Database['public']['Tables']['staff']['Row'];
+type Staff = Database['public']['Tables']['staff_data']['Row'];
 
 interface ShiftClientProps {
   stores: { id: string; name: string }[];

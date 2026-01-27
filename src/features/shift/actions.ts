@@ -1,12 +1,12 @@
 // src/app/staff/shift/actions.ts
 'use server'
 
-import { createManualClient } from '@/lib/supabase/server'
+import { createManualClient } from '@/lib/db/server'
 import { Database } from '@/types/database'
 import { cookies } from 'next/headers'
 
 // フォームデータ型
-type ShiftRequestInsert = Database['public']['Tables']['shift_requests']['Insert']
+type ShiftRequestInsert = Database['public']['Tables']['off_requests']['Insert']
 // 戻り値の型定義
 type SubmitResult = { success: true } | { error: string }
 
@@ -21,7 +21,7 @@ export async function submitShiftRequest(payload: ShiftRequestInsert): Promise<S
 
   // Supabase Type Bypass: payload の型推論エラーを回避
   const { error } = await supabase
-    .from('shift_requests')
+    .from('off_requests')
     .insert(payload as any)
     .select()
 

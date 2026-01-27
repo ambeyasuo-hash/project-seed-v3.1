@@ -1,4 +1,4 @@
-import { createManualClient } from '../supabase/server';
+import { createManualClient } from '../db/server';
 
 /**
  * AI専用ビュー（ai_staff_context）からデータを取得する

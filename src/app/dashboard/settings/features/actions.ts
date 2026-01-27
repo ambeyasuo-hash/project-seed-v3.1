@@ -1,6 +1,6 @@
 'use server';
 
-import { createMainClient } from '@/lib/supabase/server';
+import { createMainClient } from '@/lib/db/server';
 // 仮のテナントID（page.tsxと同期）
 const HARDCODED_TENANT_ID = 'db86e974-90a4-471a-b0f3-94c0429f635c';
 

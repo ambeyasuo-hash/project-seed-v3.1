@@ -1,4 +1,4 @@
-import { createManualClient } from "@/lib/supabase/server";
+import { createManualClient } from "@/lib/db/server";
 
 export default async function DashboardPage() {
     // await を追加

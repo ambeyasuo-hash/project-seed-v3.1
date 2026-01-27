@@ -1,4 +1,4 @@
-import { createMainClient } from './supabase/server';
+import { createMainClient } from './db/server';
 
 /**
  * 現在のセッション（ログイン状態）を取得する

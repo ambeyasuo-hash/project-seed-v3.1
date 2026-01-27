@@ -1,7 +1,7 @@
 // src/app/staff/actions.ts
 'use server'
 
-import { createManualClient } from '@/lib/supabase/server'
+import { createManualClient } from '@/lib/db/server'
 import { Database } from '@/types/database'
 
 // 戻り値の型定義
@@ -22,7 +22,7 @@ export async function getStaffByLineId(liffUserId: string): Promise<StaffResult>
 
   // staff テーブルから line_id が一致するスタッフを検索
   const { data, error } = await supabase
-    .from('staff')
+    .from('staff_data')
     .select('*')
     .eq('line_id', liffUserId)
     .single()

@@ -1,5 +1,5 @@
 // src/lib/auth/admin.ts の完全なコード (最終版)
-import { createManualClient } from "@/lib/supabase/server";
+import { createManualClient } from "@/lib/db/server";
 import { Database } from "@/types/database";
 
 // Selectの戻り値の型を明示的に定義（is_adminが型定義に反映済み前提）
@@ -34,7 +34,7 @@ export async function verifyAdmin(): Promise<AdminAuthResult> {
   console.log("DEBUG: verifyAdmin - Attempting to fetch staff for user:", user.id); 
 
   const { data: staff, error: dbError } = await supabase
-    .from('staff')
+    .from('staff_data')
     .select('id, is_admin, display_name')
     .eq('id', user.id) 
     .maybeSingle();

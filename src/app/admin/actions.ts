@@ -1,10 +1,10 @@
 'use server';
 
 import { verifyAdmin } from "@/lib/auth/admin";
-import { createManualClient } from '@/lib/supabase/server';
+import { createManualClient } from '@/lib/db/server';
 import { Tables as TablesManual } from "@/types/database_manual"; // Manual DBの型定義をインポート
 
-type Staff = TablesManual<'staff'>; // Manual DBの型からstaffテーブルの行型を取得
+type Staff = TablesManual<'staff_data'>; // Manual DBの型からstaffテーブルの行型を取得
 type StaffList = Staff[];
 
 type StaffResult = { 
@@ -33,7 +33,7 @@ export async function getAllStaffs(): Promise<StaffResult> {
 
   // 3. 全スタッフ名簿の取得
   const { data: staffs, error: dbError } = await supabase
-    .from('staff')
+    .from('staff_data')
     .select('id, display_name, employment_type, is_admin, created_at, line_id'); // 必要なカラムを選択
 
   if (dbError) {

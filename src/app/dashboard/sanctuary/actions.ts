@@ -1,6 +1,6 @@
 'use server';
 
-import { createMainClient } from '@/lib/supabase/server';
+import { createMainClient } from '@/lib/db/server';
 import { decrypt } from '@/utils/crypto';
 import { getAiResponse } from '@/lib/ai/gemini';
 

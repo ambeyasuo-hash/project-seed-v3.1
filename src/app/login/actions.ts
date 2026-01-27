@@ -1,6 +1,6 @@
 'use server';
 
-import { createMainClient } from "@/lib/supabase/server";
+import { createMainClient } from "@/lib/db/server";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
