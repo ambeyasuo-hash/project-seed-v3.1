@@ -5,7 +5,7 @@
 import { useLiff } from '@/components/providers/LiffProvider';
 import ShiftForm from '@/components/staff/shift/ShiftForm';
 import { useEffect, useState } from 'react';
-import { getStaffByLineId } from '@/app/staff/actions';
+import { getStaffByLineId } from '@/features/staff/actions';
 // 修正 2: Tables/schema の代わりに Database をインポート
 import { Database } from '@/types/database'; 
 

@@ -2,7 +2,7 @@
 'use client';
 
 import { useLiff } from '@/components/providers/LiffProvider';
-import { getStaffByLineId } from '../actions';
+import { getStaffByLineId } from '@/features/staff/actions';
 import { useEffect, useState } from 'react';
 import { Database } from '@/types/database';
 
