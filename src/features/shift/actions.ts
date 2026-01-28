@@ -58,11 +58,12 @@ export async function generateShiftDraft(targetMonth: string) {
     throw new Error(`希望休データ取得失敗: ${offError.message}`)
   }
 
-  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" })
+  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-lite-preview-02-05" })
   
   const prompt = `
     あなたは店舗の高度なシフトスケジューラーです。
-    提供されたデータに基づき、${targetMonth} の最適なシフト案を作成してください。
+    ${targetMonth}-01 から その月の末日まで、全日程のシフト案を作成してください。
+    一部の日程だけでなく、必ず1ヶ月分すべてのデータを網羅すること。
 
     【重要ルール】
     1. 匿名性の維持: staff_id (UUID) のみを識別子として使用すること。
