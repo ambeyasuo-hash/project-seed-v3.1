@@ -23,23 +23,25 @@ architecture_master.mdに記述
 生成: AIが発言を「組織改善のための具体的アクションプラン」へ変換し、prescriptionカラムに保存。金脈（データ）を金塊（改善アクション）へ昇華させる。
 
 4. データベース設計（Supabase Schema）
+
 tenants (店舗・ユーザー管理)
 カラム	型	説明
 id	UUID	Primary Key (gen_random_uuid)
 line_user_id	text	LINEのユーザーID (Unique)
 name	text	店舗名/スタッフ名
+
 features (機能カタログ)
-カラム	型	説明
+
 key	text	Primary Key ('ai_chat', 'shift_pilot'等)
 description	text	機能説明
 default_enabled	boolean	デフォルトの有効/無効
 tenant_flags (スイッチボード)
-カラム	型	説明
+
 tenant_id	UUID	FK (tenants.id)
 feature_key	text	FK (features.key)
 is_enabled	boolean	店舗ごとの有効/無効
 logs (対話・分析データ)
-カラム	型	説明
+
 id	bigint	Primary Key
 user_id	text	LINE User ID
 content_encrypted	text	AES-256-GCM暗号化済みの本文
@@ -49,52 +51,73 @@ summary	text	AI分析：管理者用サマリー (20文字)
 prescription	text	AI分析：組織改善への具体的処方箋
 sender	text	'USER' または 'AI'
 
+store_policies
+tenant_id	UUID (PK/FK)	tenants.id への参照
+shift_cycle	text	シフト単位 ('weekly', 'bi_weekly', 'monthly')
+salary_closing_day	smallint	給与締め日 (1-28, 99:末日)
+shift_start_day	smallint	シフト開始日 (1-28, 99:末日)
+target_labor_cost_rate	numeric	目標人件費率 (%)
+target_sales_daily	bigint	標準的な1日の売上目標
+sanctuary_params	jsonb	【Sanctuary】 お気に入り、NGペア、推奨NG
+labor_law_config	jsonb	【ガードレール】 休憩・インターバル・連勤設定
+thx_mileage_settings	jsonb	【Thxマイレージ】 加点ロジック設定
+
+
 5. ファイル構成ツリー（Directory Structure）
+最新ファイル構成ツリー (Directory Structure v3.1)
+code
+Text
 project-seed-v3.1
 ├── README.md
-├── blue.prints
-│   ├── architecture_master.md
-│   └── spec_v1_1_db_schema.md
-├── next-env.d.ts
+├── blue.prints/                           # 【SSOT】プロジェクトの全設計図
+│   ├── architecture_master.md            # 全体アーキテクチャ・通信フロー
+│   ├── spec_v1_1_db_schema.md            # DB定義（store_policies追加済）
+│   └── spec_v2_4_grand_design.md         # 【NEW】CPO策定：プロダクト完全仕様書
 ├── next.config.mjs
-├── package-lock.json
 ├── package.json
-├── postcss.config.js
-├── src
-│   ├── app
-│   │   ├── admin
-│   │   ├── api
-│   │   ├── dashboard
-│   │   ├── favicon.ico
-│   │   ├── fonts
-│   │   ├── globals.css
+├── src/
+│   ├── app/                              # Next.js 15 App Router (Routing層)
+│   │   ├── (auth)/                      # 認証関連（login, register等）
+│   │   ├── admin/                       # 店長専用：Sanctuary（聖域）
+│   │   │   ├──shift-gen/page.tsx       # AI生成プロトタイプ
+│   │   │   │   ├──shift-list/page.tsx # 保存済みシフトの一覧と削除
+│   │   │   └──staff/page.tsx           # 管理者名簿
+│   │   ├── api/                         # LINE Webhook / AI API Endpoint
+│   │   ├── dashboard/                   # 管理者：コックピット
+│   │   │   ├── settings/               # 【NEW】店舗設定（store_policies）UI
+│   │   │   └── shift/                  # シフト管理・確定画面
+│   │   ├── staff/                       # スタッフ：LINE LIFF画面
 │   │   ├── layout.tsx
-│   │   ├── login
-│   │   ├── page.tsx
-│   │   └── staff
-│   ├── components
-│   │   ├── providers
-│   │   └── staff
-│   ├── features
-│   │   └── chat
-│   ├── lib
-│   │   ├── ai
-│   │   ├── auth
-│   │   ├── auth.ts
-│   │   ├── constants.ts
-│   │   ├── db
-│   │   ├── features.ts
-│   │   ├── proxy.ts
-│   │   └── supabase
-│   ├── types
-│   │   ├── database.ts
-│   │   ├── database_main.ts
-│   │   └── database_manual.ts
-│   └── utils
-│       ├── crypto.ts
+│   │   └── page.tsx                     # ランディング/ルート分岐
+│   ├── components/                       # 共有UIコンポーネント
+│   │   ├── providers/                   # Auth/Tenant Context Providers
+│   │   ├── ui/                          # Shadcn/UI 等の原子コンポーネント（未実装）
+│   │   └── staff/                       # LIFF専用コンポーネント
+│   ├── features/                         # 【重要】ドメイン駆動：ビジネスロジック層
+│   │   ├── chat/                        # AIチャット・Safety Brake関連
+│   │   ├── shift/actions.ts             # AIシフト生成・store_policiesロジック
+│   │   └── staff/actions.ts             # LINE IDによるスタッフ取得ロジック
+│   ├── lib/                              # 外部サービス接続・基盤設定
+│   │   ├── ai/                          # Gemini 2.5 Flash ラッパー(未実装）
+│   │   ├── auth/                        # Supabase Auth (@supabase/ssr)
+│   │   ├── db/                          # 【RENAME】旧supabase。DBクライアント集約
+│   │   ├── auth.ts                      #
+│   │   ├── constans.ts                  #
+│   │   ├── features.ts                  # 機能フラグ (isFeatureEnabled)
+│   │   └── proxy.ts                     # セキュリティ・ゲートウェイ
+│   ├── types/                            # 型定義
+│   │   ├── database_main.ts             # Main DB 型定義
+│   │   ├── database_manual.ts           # Manual DB 型定義（最新版）
+│   │   └── database_.ts   
+│   └── utils/                            # 共通ユーティリティ
+│       └── crypto.ts                     # 【最重要】LINE_SECRETベース暗号化
 │       └── supabase.ts
 ├── tailwind.config.ts
 └── tsconfig.json
+
+AI: 現在 genAI の初期化は src/features/shift/actions.ts 内で行われており、src/lib/ai/ はまだ作成されていない。
+型定義: 現在のコードは src/types/database.ts (単一ファイル) を参照している。database_main.ts / database_manual.ts への分割は未実施。
+DB: src/lib/db/server.ts が createMainClient / createManualClient を提供している。
 
 6. 実装プロトコル（Implementation Guide）
 環境変数 (Critical 6)
