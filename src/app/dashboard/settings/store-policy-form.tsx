@@ -22,15 +22,17 @@ export default function StorePolicyForm({
     }
   );
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // handleSubmit 内の修正
+const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
       await upsertStorePolicy({ ...formData, tenant_id: tenantId } as StorePolicy);
       alert('店舗ポリシーを保存しました。');
+      window.location.reload(); // データを再取得するためにリロード
     } catch (error) {
       console.error(error);
-      alert('保存に失敗しました。');
+      alert('保存に失敗しました。詳細はコンソールを確認してください。');
     } finally {
       setLoading(false);
     }

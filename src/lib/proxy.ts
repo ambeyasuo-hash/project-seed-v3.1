@@ -48,12 +48,11 @@ export type StorePolicy = {
  * 店舗設定を取得する
  */
 export async function getStorePolicy(tenantId: string): Promise<StorePolicy | null> {
-  // supabaseManual を使用
   const { data, error } = await supabaseManual
     .from('store_policies')
     .select('*')
     .eq('tenant_id', tenantId)
-    .single();
+    .maybeSingle(); // .single() から .maybeSingle() に変更
 
   if (error) {
     console.error('Error fetching store policy:', error);
