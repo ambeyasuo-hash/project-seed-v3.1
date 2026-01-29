@@ -1,6 +1,8 @@
 import { getStaffDetail } from "@/features/staff/service";
 import { StaffPolicyForm } from "./staff-policy-form";
 import Link from "next/link";
+// 型定義が必要なら types からインポートするが、ここでは推論が効くため明示的インポートは不要かもしれない
+// 念のため確認: getStaffDetail は service からインポートしてOK (Server Componentなので)
 
 export default async function StaffDetailPage({ params }: { params: { id: string } }) {
   const staffDetail = await getStaffDetail(params.id);

@@ -1,24 +1,32 @@
 "use client";
-import { useState } from "react";
-import { StaffContractConfig } from "@/features/staff/service";
-import { updateStaffPolicyAction } from "../actions";
 
-export function StaffPolicyForm({ 
-  staffId, 
-  initialData, 
-  storeLimit 
-}: { 
-  staffId: string; 
+import { useState } from "react";
+// 修正箇所 1: 型定義を types.ts からインポート
+import { StaffContractConfig } from "@/features/staff/types";
+// 修正箇所 2: 直接 service を呼ばず、actions を経由する
+import { updateStaffPolicyAction } from "@/features/staff/actions";
+
+interface Props {
+  staffId: string;
   initialData: StaffContractConfig;
   storeLimit: number;
-}) {
-  const [formData, setFormData] = useState(initialData);
+}
+
+export function StaffPolicyForm({ staffId, initialData, storeLimit }: Props) {
+  const [formData, setFormData] = useState<StaffContractConfig>(initialData);
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e: React.FormEvent) => { // eを受け取るように修正
+    e.preventDefault(); // フォーム送信のデフォルト挙動を防止
     setLoading(true);
+    
     const res = await updateStaffPolicyAction(staffId, formData);
-    if (res.success) alert("設定を保存しました");
+    
+    if (res.success) {
+      alert("設定を保存しました");
+    } else {
+      alert("エラー: " + res.error);
+    }
     setLoading(false);
   };
 

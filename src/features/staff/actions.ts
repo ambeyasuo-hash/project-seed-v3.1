@@ -1,27 +1,23 @@
-'use server'
+// src/features/staff/actions.ts
+"use server";
 
-import { createManualClient } from '@/lib/db/server'
-import { Database } from '@/types/database'
+import { upsertStaffPolicy } from "./service";
+import { StaffContractConfig } from "./types"; // 型はtypes.tsから
+import { revalidatePath } from "next/cache";
 
-type StaffResult = { success: true, staff: Database['public']['Tables']['staff_data']['Row'] } | { error: string }
-
-/**
- * LINE ID を基にスタッフ情報を取得 (Staff Feature に集約)
- */
-export async function getStaffByLineId(liffUserId: string): Promise<StaffResult> {
-  if (!liffUserId) return { error: 'LINE User ID is required.' }
-
-  const supabase = createManualClient() 
-  const { data, error } = await supabase
-    .from('staff_data')
-    .select('*')
-    .eq('line_id', liffUserId)
-    .single()
-
-  if (error) {
-    console.error('Error fetching staff:', error)
-    return { error: 'スタッフ情報の取得に失敗しました。' }
+// Dashboard用: スタッフ設定の保存アクション
+export async function updateStaffPolicyAction(staffId: string, config: StaffContractConfig) {
+  try {
+    // サーバーサイドロジックを呼び出し
+    await upsertStaffPolicy(staffId, config);
+    
+    // 画面のキャッシュを更新
+    revalidatePath(`/dashboard/staff`);
+    revalidatePath(`/dashboard/staff/${staffId}`);
+    
+    return { success: true };
+  } catch (error: any) {
+    console.error("Update Policy Error:", error);
+    return { success: false, error: error.message };
   }
-
-  return { success: true, staff: data }
 }
