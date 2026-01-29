@@ -67,3 +67,20 @@ export async function upsertStaffPolicy(staffId: string, config: StaffContractCo
   if (error) throw error;
   return { success: true };
 }
+/**
+ * LIFF用: LINE User ID からスタッフを特定する
+ */
+export async function getStaffByLineId(lineId: string): Promise<Staff | null> {
+  const { data, error } = await supabaseAdmin
+    .from('staff')
+    .select('id, display_name, store_role, is_active') // 必要なカラムを選択
+    .eq('line_user_id', lineId) // ※DBのカラム名が line_user_id である前提
+    .eq('tenant_id', HARDCODED_TENANT_ID)
+    .single();
+
+  if (error) {
+    // 見つからない場合は null (未連携) を返す
+    return null;
+  }
+  return data as Staff;
+}
