@@ -68,41 +68,86 @@ thx_mileage_settings	jsonb	【Thxマイレージ】 加点ロジック設定
 code
 Text
 project-seed-v3.1
-├── README.md
-├── blue.prints/                           # 【SSOT】プロジェクトの全設計図
-│   ├── architecture_master.md            # 全体アーキテクチャ・通信フロー
-│   ├── spec_v1_1_db_schema.md            # DB定義（store_policies追加済）
-│   └── spec_v2_4_grand_design.md         # 【NEW】CPO策定：プロダクト完全仕様書
+├── .env.local                  # ローカル環境変数
+├── .gitignore
+├── next-env.d.ts
 ├── next.config.mjs
+├── package-lock.json
 ├── package.json
+├── postcss.config.js           # CSSポストプロセッサ設定
+├── README.md
+├── tailwind.config.ts
+├── test-crypto.js              # 暗号化テスト用スクリプト
+├── blue.prints/                # 【SSOT】プロジェクトの全設計図
+├── tsconfig.json
+│   ├── architecture_master.md
+│   ├── spec_v1_1_db_schema.md
+│   └── spec_v2_4_grand_design.md
 ├── src/
-│   ├── app/                              # Next.js 15 App Router (Routing層)
-│   │   ├── (auth)/                      # 認証関連（login, register等）
+│   ├── app/                              # Next.js 15 App Router
 │   │   ├── admin/                       # 店長専用：Sanctuary（聖域）
-│   │   │   ├──shift-gen/page.tsx       # AI生成プロトタイプ
-│   │   │   │   ├──shift-list/page.tsx # 保存済みシフトの一覧と削除
-│   │   │   └──staff/page.tsx           # 管理者名簿
-│   │   ├── api/                         # LINE Webhook / AI API Endpoint
+│   │   │   ├── actions.ts              # 管理者向けサーバーアクション
+│   │   │   ├── layout.tsx
+│   │   │   ├── page.tsx
+│   │   │   ├── shift-gen/              # AIシフト生成
+│   │   │   │   ├── page.tsx
+│   │   │   │   └── shift-list/ 
+│   │   │   │       └── page.tsx       # 保存済みシフトの一覧と削除
+│   │   │   └── staff/                  # 管理者・スタッフ名簿
+│   │   │       ├── actions.ts
+│   │   │       ├── page.tsx
+│   │   │       └── StaffTable.tsx
+│   │   ├── api/                         # LINE Webhook、APIエンドポイント
+│   │   │   ├── hertz_data/　         　# チームのヘルスデータ
+│   │   │   │   └── route.ts
+│   │   │   └── webhook/
+│   │   │       └── route.ts
 │   │   ├── dashboard/                   # 管理者：コックピット
-│   │   │   ├── settings/               # 【NEW】店舗設定（store_policies）UI
-│   │   │   └── shift/                  # シフト管理・確定画面
+│   │   │   ├── actions.ts
+│   │   │   ├── page.tsx
+│   │   │   ├── sanctuary/　          　# 管理者専用ページ
+│   │   │   │   ├── actions.ts
+│   │   │   │   └── page.tsx
+│   │   │   ├── settings/               # 店舗設定（store_policies）UI
+│   │   │   │   ├── features/          # 機能トグル設定
+│   │   │   │   │   ├── actions.ts
+│   │   │   │   │   ├── feature-toggle-form.tsx
+│   │   │   │   │   └── page.tsx
+│   │   │   │   ├── page.tsx
+│   │   │   │   └── store-policy-form.tsx　# 労基法設定UI & カンマフォーマット追加
+│   │   │   └── staff/                  # スタッフ管理セクション
+│   │   │       ├── [id]/　　　　       # 個別設定ページ用ディレクトリ
+│   │   │       ├── actions.ts
+│   │   │       └── page.tsx
+│   │   ├── fonts/                       # フォント資産 (GeistVF.woff等)
+│   │   ├── login/                       # 認証：ログインページ
+│   │   │   ├── actions.ts
+│   │   │   └── page.tsx
 │   │   ├── staff/                       # スタッフ：LINE LIFF画面
+│   │   │   └── shift/                  # スタッフ用シフト閲覧
+│   │   │       ├── layout.tsx
+│   │   │       └── page.tsx
+│   │   ├── favicon.ico
+│   │   ├── globals.css
 │   │   ├── layout.tsx
 │   │   └── page.tsx                     # ランディング/ルート分岐
 │   ├── components/                       # 共有UIコンポーネント
 │   │   ├── providers/                   # Auth/Tenant Context Providers
-│   │   ├── ui/                          # Shadcn/UI 等の原子コンポーネント（未実装）
-│   │   └── staff/                       # LIFF専用コンポーネント
+│   │   ├── staff/                       # LIFF専用コンポーネント
+│   │   └── ui/                          # Shadcn/UI 等の原子コンポーネント（未実装）
 │   ├── features/                         # 【重要】ドメイン駆動：ビジネスロジック層
 │   │   ├── chat/                        # AIチャット・Safety Brake関連
-│   │   ├── shift/actions.ts             # AIシフト生成・store_policiesロジック
-│   │   └── staff/actions.ts             # LINE IDによるスタッフ取得ロジック
+│   │   ├── shift/    
+│   │   │    └── actions.ts             # AIシフト生成・store_policiesロジック
+│   │   └── staff/                       # スタッフドメイン
+│   │       ├── actions.ts               # LINE IDによるスタッフ取得ロジック
+│   │       └── service.ts               # スタッフデータ取得・マッピング
 │   ├── lib/                              # 外部サービス接続・基盤設定
 │   │   ├── ai/                          # Gemini 2.5 Flash ラッパー(未実装）
 │   │   ├── auth/                        # Supabase Auth (@supabase/ssr)
 │   │   ├── db/                          # 【RENAME】旧supabase。DBクライアント集約
-│   │   ├── auth.ts                      #
-│   │   ├── constans.ts                  #
+│   │   ├── auth.ts                      # Supabase Auth (@supabase/ssr)#
+│   │   ├── constans.ts                  # 【RENAME】旧supabase。DBクライアント集約
 │   │   ├── features.ts                  # 機能フラグ (isFeatureEnabled)
 │   │   └── proxy.ts                     # セキュリティ・ゲートウェイ
 │   ├── types/                            # 型定義
@@ -112,8 +157,6 @@ project-seed-v3.1
 │   └── utils/                            # 共通ユーティリティ
 │       └── crypto.ts                     # 【最重要】LINE_SECRETベース暗号化
 │       └── supabase.ts
-├── tailwind.config.ts
-└── tsconfig.json
 
 AI: 現在 genAI の初期化は src/features/shift/actions.ts 内で行われており、src/lib/ai/ はまだ作成されていない。
 型定義: 現在のコードは src/types/database.ts (単一ファイル) を参照している。database_main.ts / database_manual.ts への分割は未実施。

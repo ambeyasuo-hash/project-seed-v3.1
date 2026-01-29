@@ -1,11 +1,13 @@
 'use server';
 
-import { supabaseManual } from '@/utils/supabase';
+import { supabaseManual } from '@/utils/supabase'; // 内部利用のみにする（exportしない）
 import { createMainClient } from '@/lib/db/server';
 import { revalidatePath } from 'next/cache';
-import { TECHNICAL_CONSTANTS } from './constants';
-import { isFeatureEnabled } from './features';
 
+/**
+ * 型定義 (Typeのみのエクスポートは許容されることが多いですが、安全のため関数の外に出さないか、
+ * 必要なら src/types/index.ts 等に移動してください)
+ */
 export type StorePolicy = {
   tenant_id: string;
   shift_cycle: 'weekly' | 'bi_weekly' | 'monthly';
@@ -40,19 +42,18 @@ const DEFAULT_STORE_POLICY: Omit<StorePolicy, 'tenant_id'> = {
   thx_mileage_settings: {}
 };
 
+/**
+ * 店舗ポリシー操作 (Server Action)
+ */
 export async function getStorePolicy(tenantId: string): Promise<StorePolicy> {
-  try {
-    const { data, error } = await supabaseManual
-      .from('store_policies')
-      .select('*')
-      .eq('tenant_id', tenantId)
-      .maybeSingle();
+  const { data, error } = await supabaseManual
+    .from('store_policies')
+    .select('*')
+    .eq('tenant_id', tenantId)
+    .maybeSingle();
 
-    if (error || !data) return { tenant_id: tenantId, ...DEFAULT_STORE_POLICY };
-    return data as StorePolicy;
-  } catch (e) {
-    return { tenant_id: tenantId, ...DEFAULT_STORE_POLICY };
-  }
+  if (error || !data) return { tenant_id: tenantId, ...DEFAULT_STORE_POLICY };
+  return data as StorePolicy;
 }
 
 export async function upsertStorePolicy(policy: Partial<StorePolicy> & { tenant_id: string }) {
@@ -62,6 +63,35 @@ export async function upsertStorePolicy(policy: Partial<StorePolicy> & { tenant_
   return data;
 }
 
+/**
+ * スタッフ個別ポリシー操作 (Server Action)
+ */
+export async function upsertStaffPolicy(
+  staffId: string, 
+  tenantId: string, 
+  contractConfig: any
+) {
+  const { data, error } = await supabaseManual
+    .from('staff_policies')
+    .upsert({
+      staff_id: staffId,
+      tenant_id: tenantId,
+      contract_config: contractConfig,
+      updated_at: new Date().toISOString()
+    }, {
+      onConflict: 'staff_id'
+    })
+    .select()
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  revalidatePath('/dashboard/staff');
+  return data;
+}
+
+/**
+ * メインDB(SEED)操作 (Server Action)
+ */
 export async function updateTenantFlag(tenantId: string, key: string, value: boolean) {
   const supabase = createMainClient();
   const { data } = await supabase.from('tenants').select('tenant_flags').eq('id', tenantId).maybeSingle();
@@ -71,9 +101,3 @@ export async function updateTenantFlag(tenantId: string, key: string, value: boo
   revalidatePath('/dashboard/settings');
   return { success: true };
 }
-
-type FeatureKey = keyof typeof TECHNICAL_CONSTANTS.FEATURES;
-export const gatewayProxy = async <T>(featureKey: FeatureKey, action: () => Promise<T>): Promise<T> => {
-  if (!isFeatureEnabled(featureKey)) throw new Error(`機能「${featureKey}」は無効です。`);
-  return await action();
-};
