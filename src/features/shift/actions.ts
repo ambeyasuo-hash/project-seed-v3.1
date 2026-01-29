@@ -2,12 +2,45 @@
 
 import { createManualClient } from '@/lib/db/server'
 import { GoogleGenerativeAI } from '@google/generative-ai'
+import { generateAndValidateShift } from './service'
+import { ShiftEntry, ValidationIssue } from './types'
 
-// Gemini初期化
+// Gemini初期化 (既存のプロトタイプ用)
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
 
 /**
- * スタッフからの希望休提出
+ * [Phase 8] 高精度AIシフト生成 & バリデーション実行
+ * service.ts の堅牢なロジックを呼び出し、UIに結果を返します。
+ */
+export type GenerateShiftResult = {
+  success: boolean;
+  data?: ShiftEntry[];
+  violations?: ValidationIssue[];
+  error?: string;
+};
+
+export async function generateAiShiftAction(
+  startDate: string,
+  endDate: string
+): Promise<GenerateShiftResult> {
+  try {
+    // Service層（server-only）のバリデーション・AIロジックを呼び出し
+    const result = await generateAndValidateShift(startDate, endDate);
+    
+    return {
+      success: result.success,
+      data: result.data,
+      violations: result.violations,
+      error: result.error
+    };
+  } catch (e) {
+    console.error("Server Action Error [generateAiShiftAction]:", e);
+    return { success: false, error: "AIシフト生成中に予期せぬエラーが発生しました。" };
+  }
+}
+
+/**
+ * スタッフからの希望休提出 (既存)
  */
 export async function submitShiftRequest(payload: any) {
   const supabase = createManualClient()
@@ -26,12 +59,12 @@ export async function submitShiftRequest(payload: any) {
 }
 
 /**
- * AIシフト案の生成 (Phase 6 Prototype)
+ * AIシフト案の生成 (Phase 6 Prototype - 互換性のために維持)
+ * ※将来的に generateAiShiftAction への移行を推奨
  */
 export async function generateShiftDraft(targetMonth: string) {
   const supabase = createManualClient()
 
-  // 匿名化ビューからのデータ取得 (AIの聖域化)
   const { data: staffContext, error: staffError } = await supabase
     .from('ai_staff_context')
     .select('*')
@@ -41,12 +74,10 @@ export async function generateShiftDraft(targetMonth: string) {
     throw new Error(`スタッフデータ取得失敗: ${staffError.message}`)
   }
 
-  // 指定月の初日と翌月の初日を算出
   const startOfMonth = `${targetMonth}-01`
   const [year, month] = targetMonth.split('-').map(Number)
   const nextMonthFirstDay = new Date(year, month, 1).toISOString().split('T')[0]
 
-  // 指定月の希望休取得
   const { data: offRequests, error: offError } = await supabase
     .from('off_requests')
     .select('staff_id, request_date')
@@ -63,28 +94,9 @@ export async function generateShiftDraft(targetMonth: string) {
   const prompt = `
     あなたは店舗の高度なシフトスケジューラーです。
     ${targetMonth}-01 から その月の末日まで、全日程のシフト案を作成してください。
-    一部の日程だけでなく、必ず1ヶ月分すべてのデータを網羅すること。
-
-    【重要ルール】
-    1. 匿名性の維持: staff_id (UUID) のみを識別子として使用すること。
-    2. 希望休の絶対遵守: off_requests にある日付は、そのスタッフを必ず「休み」にすること。
-    3. 人員確保: 毎日必ず 2名以上 を出勤させること。
-    4. 役割バランス: 可能な限り、1日は "leader" ロールを持つスタッフを1名以上含めること。
-    5. 出力制限: 出力は純粋なJSON配列のみとし、解説テキストは一切含めないこと。
-
-    【データ】
+    【重要ルール】1. 匿名性の維持 2. 希望休の絶対遵守 3. 人員確保 4. 役割バランス 5. JSONのみ出力
     スタッフ属性: ${JSON.stringify(staffContext)}
     希望休リスト: ${JSON.stringify(offRequests)}
-
-    【出力形式】
-    [
-      {
-        "staff_id": "UUID",
-        "date": "YYYY-MM-DD",
-        "shift_type": "full-time",
-        "role": "leader or staff"
-      }
-    ]
   `
 
   const result = await model.generateContent(prompt)
@@ -93,11 +105,9 @@ export async function generateShiftDraft(targetMonth: string) {
   try {
     const cleanedJson = responseText.replace(/```json|```/g, '').trim()
     const draft = JSON.parse(cleanedJson)
-
     const violations = draft.filter((s: any) => 
       offRequests?.some(off => off.staff_id === s.staff_id && off.request_date === s.date)
     )
-
     return { success: true, data: draft, violated: violations.length > 0 }
   } catch (e) {
     console.error('JSON Parse Error:', responseText)
@@ -106,14 +116,14 @@ export async function generateShiftDraft(targetMonth: string) {
 }
 
 /**
- * 生成されたシフト案を保存する
+ * 生成されたシフト案を保存する (既存)
  */
 export async function saveShiftDraft(shifts: any[]) {
   const supabase = createManualClient()
 
   const insertData = shifts.map(s => ({
     staff_id: s.staff_id,
-    work_date: s.date,
+    work_date: s.date || s.start_at.split('T')[0], // Phase 8 の ISO形式にも対応
     start_time: s.shift_type === 'full-time' ? '09:00:00' : '13:00:00',
     end_time: s.shift_type === 'full-time' ? '18:00:00' : '18:00:00',
     status: 'draft'
@@ -132,11 +142,10 @@ export async function saveShiftDraft(shifts: any[]) {
 }
 
 /**
- * 保存済みシフト一覧を取得する
+ * 保存済みシフト一覧を取得する (既存)
  */
 export async function getShifts(targetMonth: string) {
   const supabase = createManualClient()
-
   const startOfMonth = `${targetMonth}-01`
   const [year, month] = targetMonth.split('-').map(Number)
   const nextMonthFirstDay = new Date(year, month, 1).toISOString().split('T')[0]
@@ -145,9 +154,7 @@ export async function getShifts(targetMonth: string) {
     .from('shifts')
     .select(`
       *,
-      staff_data (
-        display_name
-      )
+      staff_data ( display_name )
     `)
     .gte('work_date', startOfMonth)
     .lt('work_date', nextMonthFirstDay)
@@ -157,16 +164,14 @@ export async function getShifts(targetMonth: string) {
     console.error('Fetch Shifts Error:', error)
     throw new Error('シフトの取得に失敗しました。')
   }
-
   return data
 }
 
 /**
- * 指定月の下書きシフトをすべて削除する
+ * 指定月の下書きシフトをすべて削除する (既存)
  */
 export async function deleteDraftShifts(targetMonth: string) {
   const supabase = createManualClient()
-
   const startOfMonth = `${targetMonth}-01`
   const [year, month] = targetMonth.split('-').map(Number)
   const nextMonthFirstDay = new Date(year, month, 1).toISOString().split('T')[0]
@@ -182,6 +187,5 @@ export async function deleteDraftShifts(targetMonth: string) {
     console.error('Delete Error:', error)
     return { success: false, error: error.message }
   }
-
   return { success: true }
 }

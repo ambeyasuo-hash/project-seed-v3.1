@@ -1,23 +1,29 @@
 'use client'
 
 import { useState } from 'react'
-import { generateShiftDraft, saveShiftDraft } from '@/features/shift/actions'
+import { generateAiShiftAction, saveShiftDraft, GenerateShiftResult } from '@/features/shift/actions'
+import { format, startOfMonth, endOfMonth } from 'date-fns'
 
 export default function ShiftGenPage() {
-  const [res, setRes] = useState<{data: any[], violated: boolean} | null>(null)
+  const [res, setRes] = useState<GenerateShiftResult | null>(null)
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
-  // --- 追加: 月の選択状態 ---
-  const [targetMonth, setTargetMonth] = useState('2025-02') 
+  const [targetMonth, setTargetMonth] = useState(format(new Date(), 'yyyy-MM')) 
 
-  // AIシフト生成実行
+  // AIシフト生成実行 (Phase 8 高精度版)
   const handleGenerate = async () => {
     setLoading(true)
+    setRes(null)
     try {
-      const result = await generateShiftDraft(targetMonth) // 固定値から変数へ
-      setRes(result as any)
+      // 選択された月の開始日と終了日を ISO UTC 形式で生成
+      const date = new Date(`${targetMonth}-01T00:00:00Z`)
+      const startDate = startOfMonth(date).toISOString()
+      const endDate = endOfMonth(date).toISOString()
+
+      const result = await generateAiShiftAction(startDate, endDate)
+      setRes(result)
     } catch (e) {
-      alert(String(e))
+      alert('システムエラー: ' + String(e))
     } finally {
       setLoading(false)
     }
@@ -31,7 +37,7 @@ export default function ShiftGenPage() {
       const result = await saveShiftDraft(res.data)
       if (result.success) {
         alert('シフトを正常に下書き保存しました。')
-        setRes(null) // 保存後は表示をクリア
+        setRes(null)
       } else {
         alert('保存失敗: ' + result.error)
       }
@@ -42,81 +48,107 @@ export default function ShiftGenPage() {
     }
   }
 
-   // ... handleSave 内の alert 等も必要に応じて targetMonth を使うよう修正可能 ...
-
-   return (
-    <div className="p-8">
-      <h1 className="text-xl font-bold mb-4">AIシフト生成プロトタイプ</h1>
-      
-      {/* --- 追加: 月選択インターフェース --- */}
-      <div className="flex items-center gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
+  return (
+    <div className="p-8 max-w-6xl mx-auto">
+      <div className="flex justify-between items-end mb-8">
         <div>
-          <label className="block text-xs text-gray-500 mb-1">対象月を選択</label>
-          <input 
-            type="month" 
-            value={targetMonth} 
-            onChange={(e) => setTargetMonth(e.target.value)}
-            className="border rounded px-3 py-2"
-          />
+          <h1 className="text-2xl font-bold text-gray-800">AIシフトジェネレーター v3.2</h1>
+          <p className="text-gray-500">労基法・店舗ポリシーの自動検閲エンジン搭載</p>
+        </div>
+        
+        <div className="flex items-center gap-4 p-4 bg-white border rounded-xl shadow-sm">
+          <div>
+            <label className="block text-xs font-bold text-gray-400 uppercase mb-1">対象月</label>
+            <input 
+              type="month" 
+              value={targetMonth} 
+              onChange={(e) => setTargetMonth(e.target.value)}
+              className="border-none text-lg font-semibold focus:ring-0 p-0"
+            />
+          </div>
+          <div className="h-10 w-px bg-gray-200 mx-2" />
+          <button 
+            onClick={handleGenerate}
+            disabled={loading || saving}
+            className="bg-indigo-600 text-white px-6 py-2.5 rounded-lg font-semibold hover:bg-indigo-700 disabled:bg-gray-300 transition-all shadow-md shadow-indigo-100"
+          >
+            {loading ? 'AI思考中...' : 'AIシフト生成'}
+          </button>
         </div>
       </div>
-      
-      <div className="flex gap-4 mb-6">
-        <button 
-          onClick={handleGenerate}
-          disabled={loading || saving}
-          className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition"
-        >
-          {loading ? 'AIが思考中...' : '2025-02のシフトを生成'}
-        </button>
 
-        {res?.data && (
-          <button 
-            onClick={handleSave}
-            disabled={saving}
-            className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 disabled:bg-gray-400 transition"
-          >
-            {saving ? '保存中...' : 'この内容で下書き保存'}
-          </button>
-        )}
-      </div>
-
-      {res?.violated && (
-        <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4 rounded">
-          ⚠️ 警告: AIが生成したシフトの中に、希望休（off_requests）と重複している箇所があります。
+      {/* エラー表示 */}
+      {res?.error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 p-4 mb-6 rounded-xl">
+          {res.error}
         </div>
       )}
 
+      {/* ガードレール：バリデーション警告（ここが Phase 8 の肝） */}
+      {res?.violations && res.violations.length > 0 && (
+        <div className="mb-8 space-y-3">
+          <h3 className="text-sm font-bold text-amber-600 flex items-center gap-2">
+            ⚠️ 以下の制約違反が検出されました（要確認）
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {res.violations.map((v, i) => (
+              <div key={i} className={`p-3 text-sm rounded-lg border flex flex-col ${
+                v.level === 'ERROR' ? 'bg-red-50 border-red-100 text-red-800' : 'bg-amber-50 border-amber-100 text-amber-800'
+              }`}>
+                <span className="font-bold text-xs opacity-70">[{v.code}]</span>
+                <span>{v.message}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* シフトプレビュー & 保存ボタン */}
       {res?.data && (
-        <div className="overflow-x-auto border rounded-lg shadow-sm">
-          <table className="min-w-full bg-white text-sm text-left">
-            <thead className="bg-gray-50 border-b">
-              <tr>
-                <th className="px-4 py-3 font-semibold">日付</th>
-                <th className="px-4 py-3 font-semibold">スタッフID (略)</th>
-                <th className="px-4 py-3 font-semibold">役割</th>
-                <th className="px-4 py-3 font-semibold">シフト種別</th>
-              </tr>
-            </thead>
-            <tbody>
-              {res.data.map((item: any, i: number) => (
-                <tr key={i} className="border-b hover:bg-blue-50 transition">
-                  <td className="px-4 py-2 font-mono">{item.date}</td>
-                  <td className="px-4 py-2 font-mono text-xs text-gray-400">
-                    {item.staff_id.slice(0, 8)}...
-                  </td>
-                  <td className="px-4 py-2">
-                    <span className={`px-2 py-1 rounded text-xs ${
-                      item.role === 'leader' ? 'bg-blue-100 text-blue-700 font-bold' : 'bg-gray-100 text-gray-700'
-                    }`}>
-                      {item.role}
-                    </span>
-                  </td>
-                  <td className="px-4 py-2 text-gray-600">{item.shift_type}</td>
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
+            <h2 className="font-bold text-gray-700">生成されたシフト案 ({res.data.length}件)</h2>
+            <button 
+              onClick={handleSave}
+              disabled={saving}
+              className="bg-emerald-600 text-white px-8 py-2 rounded-lg font-semibold hover:bg-emerald-700 disabled:bg-gray-300 transition-all shadow-md shadow-emerald-100"
+            >
+              {saving ? '保存中...' : 'この内容で確定・保存'}
+            </button>
+          </div>
+
+          <div className="overflow-hidden border border-gray-100 rounded-xl shadow-sm bg-white">
+            <table className="min-w-full text-sm text-left">
+              <thead className="bg-gray-50 border-b border-gray-100">
+                <tr>
+                  <th className="px-6 py-4 font-bold text-gray-600">日付</th>
+                  <th className="px-6 py-4 font-bold text-gray-600">時間</th>
+                  <th className="px-6 py-4 font-bold text-gray-600">スタッフID</th>
+                  <th className="px-6 py-4 font-bold text-gray-600">役割</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {res.data.map((item, i) => (
+                  <tr key={i} className="hover:bg-indigo-50/30 transition-colors">
+                    <td className="px-6 py-4 font-medium text-gray-900">
+                      {format(new Date(item.start_at), 'yyyy/MM/dd (E)', { locale: require('date-fns/locale/ja') })}
+                    </td>
+                    <td className="px-6 py-4 text-gray-600">
+                      {format(new Date(item.start_at), 'HH:mm')} - {format(new Date(item.end_at), 'HH:mm')}
+                    </td>
+                    <td className="px-6 py-4 font-mono text-xs text-gray-400">
+                      {item.staff_id.slice(0, 8)}...
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="px-2.5 py-1 rounded-md text-xs font-bold bg-gray-100 text-gray-600 uppercase tracking-wider">
+                        {item.role || 'Member'}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>
