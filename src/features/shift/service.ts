@@ -46,14 +46,16 @@ interface StaffWithPolicy {
  * AIに「現場の状況」を完璧に伝えるための高密度データパックを作成する
  */
 export async function prepareGenerationContext(startDate: string, endDate: string) {
-  // 1.1 店舗ポリシーの取得
-  const { data: storePolicyData } = await supabase
-    .from("store_policies")
-    .select("*")
-    .eq("tenant_id", TENANT_ID)
-    .single();
-
-  const storePolicy = StorePolicySchema.parse(storePolicyData || {});
+    // 1. 店舗ポリシーの取得
+    const { data: storePolicyData } = await supabase
+      .from("store_policies")
+      .select("*")
+      .eq("tenant_id", TENANT_ID)
+      .single();
+  
+    // DBのデータが null または 期待するキーを持っていない場合に備えてパース
+    // .catch() を入れることで、万が一のパースエラーでもシステムを止めずデフォルトを返す
+    const storePolicy = StorePolicySchema.parse(storePolicyData || {});
 
   // 1.2 スタッフ一覧と個別ポリシーの取得
   const { data: rawStaffData } = await supabase

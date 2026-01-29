@@ -2,24 +2,25 @@ import { z } from "zod";
 
 // --- Policies ---
 
-// 店舗ポリシー：休憩ルール
 export const RestRuleSchema = z.object({
-  work_hours_threshold: z.number().describe("この時間以上働く場合に適用（単位：時間）"),
-  rest_minutes: z.number().describe("休憩時間（単位：分）"),
+  work_hours_threshold: z.number().default(6),
+  rest_minutes: z.number().default(45),
 });
 
-// 店舗ポリシー：全体設定
+// 店舗ポリシー：全体設定（各項目に .default を適用して欠損に強くする）
 export const StorePolicySchema = z.object({
   consecutive_work_limits: z.object({
     max_days: z.number().default(6),
-  }),
+  }).default({ max_days: 6 }), // オブジェクト自体がなくてもデフォルトを適用
+  
   rest_rules: z.array(RestRuleSchema).default([
     { work_hours_threshold: 6, rest_minutes: 45 },
     { work_hours_threshold: 8, rest_minutes: 60 },
   ]),
+  
   interval_rules: z.object({
     min_interval_hours: z.number().default(11),
-  }),
+  }).default({ min_interval_hours: 11 }), // オブジェクト自体がなくてもデフォルトを適用
 });
 
 // スタッフ個別ポリシー
