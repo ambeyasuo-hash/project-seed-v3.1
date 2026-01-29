@@ -1,28 +1,26 @@
-import { getStaffList, getStaffPolicy, Staff } from "@/features/staff/service";
+import { getStaffDetail } from "@/features/staff/service";
 import { StaffPolicyForm } from "./staff-policy-form";
 import Link from "next/link";
-import { notFound } from "next/navigation";
 
 export default async function StaffDetailPage({ params }: { params: { id: string } }) {
-  const staffList = await getStaffList();
-  const staff = staffList.find((s: Staff) => s.id === params.id);
-
-  if (!staff) notFound();
-
-  const initialPolicy = await getStaffPolicy(params.id);
-  const defaultPolicy = {
-    max_hours_per_week: 40,
-    midnight_work_allowed: false,
-    max_consecutive_working_days: 6,
-    ...initialPolicy
-  };
+  const staffDetail = await getStaffDetail(params.id);
 
   return (
-    <div className="p-6 max-w-xl mx-auto">
-      <Link href="/dashboard/staff" className="text-sm text-gray-500">← 戻る</Link>
-      <h1 className="text-xl font-bold mt-4">{staff.display_name} の個別条件</h1>
-      <div className="mt-6 bg-white border rounded-lg p-6 shadow-sm">
-        <StaffPolicyForm staffId={staff.id} initialData={defaultPolicy} />
+    <div className="p-6 max-w-2xl mx-auto">
+      <Link href="/dashboard/staff" className="text-sm text-blue-600">← スタッフ一覧に戻る</Link>
+      
+      <div className="mt-4 mb-8">
+        <h1 className="text-2xl font-bold">{staffDetail.display_name}</h1>
+        <p className="text-gray-500">役割: {staffDetail.store_role}</p>
+      </div>
+
+      <div className="bg-white border rounded-xl shadow-sm p-6">
+        <h2 className="text-lg font-semibold mb-6 border-b pb-2">個別就業条件（ガードレール）</h2>
+        <StaffPolicyForm 
+          staffId={staffDetail.id} 
+          initialData={staffDetail.contract_config}
+          storeLimit={staffDetail.reference_limits.store_max_consecutive_days}
+        />
       </div>
     </div>
   );

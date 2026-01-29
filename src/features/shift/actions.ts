@@ -58,7 +58,7 @@ export async function generateShiftDraft(targetMonth: string) {
     throw new Error(`希望休データ取得失敗: ${offError.message}`)
   }
 
-  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-lite-preview-02-05" })
+  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-lite" })
   
   const prompt = `
     あなたは店舗の高度なシフトスケジューラーです。
