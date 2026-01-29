@@ -24,13 +24,18 @@ export async function updateStaffPolicyAction(staffId: string, config: StaffCont
 }
 /**
  * LIFF用: スタッフ取得アクション
+ * UI側が { success: boolean, staff: ... } の形式を期待しているため、ラッパーを噛ませる
  */
 export async function getStaffByLineId(lineId: string) {
   try {
     const staff = await getStaffService(lineId);
-    return staff;
-  } catch (error) {
+    if (staff) {
+      return { success: true, staff };
+    } else {
+      return { success: false, error: "Staff not found" };
+    }
+  } catch (error: any) {
     console.error("LIFF Fetch Error:", error);
-    return null;
+    return { success: false, error: error.message };
   }
 }
