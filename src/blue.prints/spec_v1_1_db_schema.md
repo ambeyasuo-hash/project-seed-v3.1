@@ -116,9 +116,11 @@ project-seed-v3.1
 │   │   │   │   ├── page.tsx
 │   │   │   │   └── store-policy-form.tsx　# 労基法設定UI & カンマフォーマット追加
 │   │   │   └── staff/                  # スタッフ管理セクション
-│   │   │       ├── [id]/　　　　       # 個別設定ページ用ディレクトリ
-│   │   │       ├── actions.ts
-│   │   │       └── page.tsx
+│   │   │       ├── [id]/　　　　       # Server Component (詳細・フォーム親)
+│   │   │       │   ├── page.tsx            # Server Component (詳細・フォーム親)
+│   │   │       │   └── staff-policy-form.tsx # Client Component (入力フォーム)
+│   │   │       ├── actions.ts（削除）    #×Phase7.2でfeatures/staff/actions.ts に統合・移行 
+│   │   │       └── page.tsx             # Server Component (一覧)
 │   │   ├── fonts/                       # フォント資産 (GeistVF.woff等)
 │   │   ├── login/                       # 認証：ログインページ
 │   │   │   ├── actions.ts
@@ -140,8 +142,9 @@ project-seed-v3.1
 │   │   ├── shift/    
 │   │   │    └── actions.ts             # AIシフト生成・store_policiesロジック
 │   │   └── staff/                       # スタッフドメイン
-│   │       ├── actions.ts               # LINE IDによるスタッフ取得ロジック
-│   │       └── service.ts               # スタッフデータ取得・マッピング
+│   │       ├── actions.ts                # 【MOD】Server Actions (Dashboard/LIFF共
+│   │       ├── service.ts               # 【MOD】DB操作ロジック (server-only / 特権アクセス)
+│   │       └── types.ts                    # 【NEW】型定義の隔離場所 (SSOT)
 │   ├── lib/                              # 外部サービス接続・基盤設定
 │   │   ├── ai/                          # Gemini 2.5 Flash ラッパー(未実装）
 │   │   ├── auth/                        # Supabase Auth (@supabase/ssr)
@@ -175,86 +178,3 @@ Zero Hardcoding: コード内にAPIキーや特定のIDを直書きすること�
 Force-Dynamic: Vercel/Next.jsのキャッシュによる「環境変数の読み込み不全」を防ぐため、export const dynamic = 'force-dynamic' をAPIルートに必須とする。
 Ghost Prevention: プロジェクト移行時は、旧プロジェクトのWebhook URLを即座に無効化し、キャッシュの残骸を完全に排除すること。
 
-src
-src\app
-src\app\admin
-src\app\admin\staff
-src\app\admin\staff\actions.ts
-src\app\admin\staff\page.tsx
-src\app\admin\staff\StaffTable.tsx
-src\app\admin\actions.ts
-src\app\admin\layout.tsx
-src\app\admin\page.tsx
-src\app\api
-src\app\api\hertz_data
-src\app\api\hertz_data\route.ts
-src\app\api\webhook
-src\app\api\webhook\route.ts
-src\app\dashboard
-src\app\dashboard\sanctuary
-src\app\dashboard\sanctuary\actions.ts
-src\app\dashboard\settings
-src\app\dashboard\settings\features
-src\app\dashboard\settings\features\actions.ts
-src\app\dashboard\settings\features\feature-toggle-form.tsx
-src\app\dashboard\settings\features\page.tsx
-src\app\dashboard\page.tsx
-src\app\fonts
-src\app\fonts\GeistMonoVF.woff
-src\app\fonts\GeistVF.woff
-src\app\login
-src\app\login\actions.ts
-src\app\login\page.tsx
-src\app\staff
-src\app\staff\shift
-src\app\staff\shift\actions.ts
-src\app\staff\shift\layout.tsx
-src\app\staff\shift\page.tsx
-src\app\staff\actions.ts
-src\app\favicon.ico
-src\app\globals.css
-src\app\layout.tsx
-src\app\page.tsx
-src\components
-src\components\providers
-src\components\providers\LiffProvider.tsx
-src\components\staff
-src\components\staff\shift
-src\components\staff\shift\ShiftClient.tsx
-src\components\staff\shift\ShiftForm.tsx
-src\features
-src\features\chat
-src\features\chat\flex_templates.ts
-src\features\chat\gemini.ts
-src\features\chat\prompts.ts
-src\lib
-src\lib\ai
-src\lib\ai\context.ts
-src\lib\ai\gemini.ts
-src\lib\auth
-src\lib\auth\admin.ts
-src\lib\db
-src\lib\db\manual.ts
-src\lib\supabase
-src\lib\supabase\server.ts
-src\lib\auth.ts
-src\lib\constants.ts
-src\lib\features.ts
-src\lib\proxy.ts
-src\types
-src\types\database.ts
-src\types\database_main.ts
-src\types\database_manual.ts
-src\utils
-src\utils\crypto.ts
-src\utils\supabase.ts
-.env.local
-.gitignore
-next-env.d.ts
-next.config.mjs
-package-lock.json
-package.json
-postcss.config.js
-README.md
-tailwind.config.ts
-tsconfig.json
