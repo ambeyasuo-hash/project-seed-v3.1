@@ -1,4 +1,5 @@
-import { getStaffList, Staff } from "@/features/staff/service";
+import { getStaffList } from "@/features/staff/service"; // 関数は service から
+import { Staff } from "@/features/staff/types";          // 型は types から (New!)
 import Link from "next/link";
 
 export default async function StaffListPage() {
